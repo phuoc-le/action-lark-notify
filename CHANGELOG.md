@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/drayeasy/action-lark-notify/compare/v0...v0.1.3) (2024-12-10)
+
+
+### Bug Fixes
+
+* fix workflow & run display ([9971b90](https://github.com/drayeasy/action-lark-notify/commit/9971b90c50ad8e9d0d531175c0578f410e0028e7))
+
 ## [0.1.2](https://github.com/drayeasy/action-lark-notify/compare/v0...v0.1.2) (2024-12-10)
 
 
