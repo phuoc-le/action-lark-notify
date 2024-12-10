@@ -147,7 +147,7 @@ export function getCardElements() {
           elements: [
             {
               tag: "markdown",
-              content: `**Action**\n[${process.env.GITHUB_ACTION}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
+              content: `**Run**\n[${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
             },
           ],
         },
