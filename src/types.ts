@@ -6,6 +6,6 @@ export interface RequestSignature {
 export interface LarkResponse {
   code: number;
   msg: string;
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: we have to use any here.
   data: any;
 }

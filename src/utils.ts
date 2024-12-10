@@ -39,7 +39,8 @@ export function getRequestSignature(): RequestSignature {
 }
 
 export function getCardHeader() {
-  return {
+  // biome-ignore lint/suspicious/noExplicitAny: we have to use any here.
+  const data: Record<string, any> = {
     title: {
       tag: "plain_text",
       content: process.env.LARK_MESSAGE_TITLE || process.env.GITHUB_WORKFLOW,
@@ -53,6 +54,10 @@ export function getCardHeader() {
     },
     template: process.env.LARK_MESSAGE_TEMPLATE || "green",
   };
+  if (!data.icon.img_key) {
+    data.icon = undefined;
+  }
+  return data;
 }
 
 export function getCardElements() {
@@ -209,13 +214,11 @@ export async function notify() {
   core.debug(`Request URL: ${requestUrl}`);
   const requestBody = await getRequestBody();
   core.debug(`Request Body: ${JSON.stringify(requestBody, null, 2)}`);
-  console.log("requestBody", JSON.stringify(requestBody, null, 2));
 
   return httpClient
     .postJson<LarkResponse>(requestUrl, requestBody)
     .then((response) => {
       core.debug(`Server Response: ${JSON.stringify(response, null, 2)}`);
-      console.log("response", JSON.stringify(response, null, 2));
       const { statusCode, result } = response;
       if (statusCode < 200 || statusCode >= 300) {
         throw new Error(`Server status code ${statusCode} is out of range`);
