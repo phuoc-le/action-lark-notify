@@ -29,6 +29,7 @@
     "local": "local-action . src/main.ts .env",
     "make-badge": "tsx ./scripts/make-badge.ts",
     "prepare": "is-ci || simple-git-hooks",
+    "release": "release-it",
     "preversion": "pnpm run check && pnpm run build"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "@commitlint/cli": "^19.6.0",
     "@commitlint/config-conventional": "^19.6.0",
     "@github/local-action": "^2.2.1",
+    "@release-it/conventional-changelog": "^9.0.3",
     "@tsconfig/node22": "^22.0.0",
     "@types/node": "^22.10.1",
     "@types/shelljs": "^0.8.15",
@@ -48,6 +50,7 @@
     "badge-maker": "^4.1.0",
     "is-ci": "^4.1.0",
     "lint-staged": "^15.2.10",
+    "release-it": "^17.10.0",
     "simple-git-hooks": "^2.11.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
