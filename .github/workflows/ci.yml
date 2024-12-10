@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI
 
 on:
   pull_request:
@@ -12,53 +12,51 @@ permissions:
   contents: read
 
 jobs:
-  test-javascript:
-    name: JavaScript Tests
+  check-dist:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        id: checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
-        id: setup-node
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-          cache: npm
+          cache: pnpm
 
       - name: Install Dependencies
-        id: npm-ci
-        run: npm ci
+        run: pnpm install
 
-      - name: Check Format
-        id: npm-format-check
-        run: npm run format:check
+      - name: Build
+        run: pnpm run build
 
-      - name: Lint
-        id: npm-lint
-        run: npm run lint
+      - name: Compare Directories
+        id: diff
+        run: |
+          if [ ! -d dist/ ]; then
+            echo "Expected dist/ directory does not exist.  See status below:"
+            ls -la ./
+            exit 1
+          fi
+          if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff --ignore-space-at-eol --text dist/
+            exit 1
+          fi
 
-      - name: Test
-        id: npm-ci-test
-        run: npm run ci-test
-
-  test-action:
-    name: GitHub Actions Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v4
-
-      - name: Test Local Action
-        id: test-action
-        uses: ./
+      - if: ${{ failure() && steps.diff.outcome == 'failure' }}
+        name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          milliseconds: 1000
+          name: dist
+          path: dist/
 
-      - name: Print Output
-        id: output
-        run: echo "${{ steps.test-action.outputs.time }}"
+      - name: Notify Test
+        uses: ./
+        env:
+          LARK_WEBHOOK: ${{ secrets.LARK_WEBHOOK }}
+          LARK_SECRET: ${{ secrets.LARK_SECRET }}
