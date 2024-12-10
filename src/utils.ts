@@ -96,9 +96,9 @@ export function getCardElements() {
           elements: [
             {
               tag: "markdown",
-              content: `**Actor**\n${
+              content: `**Actor**\n[${
                 process.env.LARK_MESSAGE_AUTHOR || process.env.GITHUB_ACTOR
-              }`,
+              }](${process.env.GITHUB_SERVER_URL}/${process.env.LARK_MESSAGE_AUTHOR || process.env.GITHUB_ACTOR})`,
             },
           ],
         },
@@ -117,7 +117,7 @@ export function getCardElements() {
           elements: [
             {
               tag: "markdown",
-              content: `**Ref**\n${process.env.GITHUB_REF}`,
+              content: `**Ref**\n[${process.env.GITHUB_REF}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/tree/${process.env.GITHUB_REF_NAME})`,
             },
           ],
         },
@@ -158,7 +158,7 @@ export function getCardElements() {
           elements: [
             {
               tag: "markdown",
-              content: `**Commit**\n${process.env.GITHUB_SHA}`,
+              content: `**Commit**\n[${process.env.GITHUB_SHA?.slice(0, 8)}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/commit/${process.env.GITHUB_SHA})`,
             },
           ],
         },
