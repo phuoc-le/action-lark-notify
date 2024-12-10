@@ -26,6 +26,7 @@
     "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "build:watch": "pnpm run build --watch",
     "check": "biome check --write .",
+    "local": "local-action . src/main.ts .env",
     "make-badge": "tsx ./scripts/make-badge.ts",
     "prepare": "is-ci || simple-git-hooks",
     "preversion": "pnpm run check && pnpm run build"
