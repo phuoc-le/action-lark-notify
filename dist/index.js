@@ -34817,35 +34817,6 @@ module.exports = parseParams
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__nccwpck_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__nccwpck_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__nccwpck_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/node module decorator */
 /******/ 	(() => {
 /******/ 		__nccwpck_require__.nmd = (module) => {
@@ -34867,7 +34838,6 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ./node_modules/.pnpm/@actions+core@1.11.1/node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(9999);
-var core_default = /*#__PURE__*/__nccwpck_require__.n(core);
 ;// CONCATENATED MODULE: external "node:crypto"
 const external_node_crypto_namespaceObject = require("node:crypto");
 // EXTERNAL MODULE: ./node_modules/.pnpm/@actions+http-client@2.2.3/node_modules/@actions/http-client/lib/index.js
@@ -34902,8 +34872,8 @@ function getRequestSignature() {
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const secret = process.env.LARK_SECRET;
     if (!secret) {
-        core_default().warning("LARK_SECRET is not set, sign is skipped and it may lead to signature verification failure in Lark.");
-        core_default().warning("See https://open.larksuite.com/document/client-docs/bot-v3/add-custom-bot#c1491056 for more information.");
+        core.warning("LARK_SECRET is not set, sign is skipped and it may lead to signature verification failure in Lark.");
+        core.warning("See https://open.larksuite.com/document/client-docs/bot-v3/add-custom-bot#c1491056 for more information.");
         return {};
     }
     const buffer = Buffer.from(`${timestamp}\n${secret}`, "utf-8");
@@ -34940,7 +34910,7 @@ function getCardElements() {
     var _a, _b;
     const result = shell.exec("git log -1 --pretty=%B", { silent: true });
     if (result.code !== 0) {
-        core_default().setFailed(`Cannot get Git information. Have you setup the action correctly? ${(_a = result.stderr) !== null && _a !== void 0 ? _a : result.stdout}`);
+        core.setFailed(`Cannot get Git information. Have you setup the action correctly? ${(_a = result.stderr) !== null && _a !== void 0 ? _a : result.stdout}`);
     }
     const lastGitMessage = result.stdout.trim();
     return [
@@ -35073,13 +35043,13 @@ function notify() {
     return __awaiter(this, void 0, void 0, function* () {
         const httpClient = new lib.HttpClient();
         const requestUrl = getRequestUrl();
-        core_default().debug(`Request URL: ${requestUrl}`);
+        core.debug(`Request URL: ${requestUrl}`);
         const requestBody = yield getRequestBody();
-        core_default().debug(`Request Body: ${JSON.stringify(requestBody, null, 2)}`);
+        core.debug(`Request Body: ${JSON.stringify(requestBody, null, 2)}`);
         return httpClient
             .postJson(requestUrl, requestBody)
             .then((response) => {
-            core_default().debug(`Server Response: ${JSON.stringify(response, null, 2)}`);
+            core.debug(`Server Response: ${JSON.stringify(response, null, 2)}`);
             const { statusCode, result } = response;
             if (statusCode < 200 || statusCode >= 300) {
                 throw new Error(`Server status code ${statusCode} is out of range`);
@@ -35111,13 +35081,13 @@ function run() {
     return main_awaiter(this, void 0, void 0, function* () {
         try {
             notify().then(() => {
-                core_default().info("Notify succeeded.");
+                core.info("Notify succeeded.");
             });
         }
         catch (error) {
             // Fail the workflow run if an error occurs
             if (error instanceof Error) {
-                core_default().setFailed(`Notify failed. Error message: ${error.message}`);
+                core.setFailed(`Notify failed. Error message: ${error.message}`);
             }
         }
     });
