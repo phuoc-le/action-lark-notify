@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/drayeasy/action-lark-notify/compare/v0...v0.1.2) (2024-12-10)
+
+
+### Bug Fixes
+
+* fix run title and label ([7ccad28](https://github.com/drayeasy/action-lark-notify/commit/7ccad280bfd342eccb2319e08e8b12280d05fac8))
+
 ## [0.1.1](https://github.com/drayeasy/action-lark-notify/compare/v0.1.0...v0.1.1) (2024-12-10)
 
 
