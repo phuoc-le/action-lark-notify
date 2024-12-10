@@ -51,6 +51,30 @@ By default, action is designed to run with minimal configuration but you can alt
 
 Also see [Accessing contextual information about workflow runs](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/accessing-contextual-information-about-workflow-runs).
 
+## Develop
+
+1. Git clone
+2. Set up `.env` file
+
+```shell
+LARK_WEBHOOK=test-webhook # Must update
+LARK_SECRET=test-secret # Maybe update
+GITHUB_ACTOR=test-actor
+GITHUB_WORKFLOW=workflow-name
+GITHUB_SERVER_URL=https://github.com
+GITHUB_REPOSITORY=test-owner/test-repo
+GITHUB_REF=refs/heads/main
+GITHUB_EVENT_NAME=push
+GITHUB_ACTION=test-action
+GITHUB_RUN_ID=test-id
+GITHUB_SHA=test-sha
+
+```
+
+3. Update code
+4. Run `pnpm run local` to test
+5. Run `pnpm run release` to release
+
 ## Credits
 
 - <https://github.com/rtCamp/action-slack-notify>
