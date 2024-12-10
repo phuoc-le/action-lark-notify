@@ -71,6 +71,13 @@ export function getCardElements() {
   }
   const lastGitMessage = result.stdout.trim();
 
+  const workflowFile = process.env.GITHUB_WORKFLOW_REF?.split("@")[0]
+    .split("/")
+    .at(-1);
+  const workflowName = process.env.GITHUB_WORKFLOW?.includes(".github")
+    ? workflowFile?.split(".")[0]
+    : process.env.GITHUB_WORKFLOW;
+
   return [
     {
       tag: "column_set",
@@ -147,7 +154,7 @@ export function getCardElements() {
           elements: [
             {
               tag: "markdown",
-              content: `**Run**\n[${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
+              content: `**Workflow & Run**\n[${workflowName}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/workflows/${workflowFile}) / [${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
             },
           ],
         },
