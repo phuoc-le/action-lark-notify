@@ -37,11 +37,11 @@ By default, action is designed to run with minimal configuration but you can alt
 | --------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | LARK_WEBHOOK                | -                  | **Required.** Lark bot webhook url.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | LARK_SECRET                 | -                  | **Required if you enable signature verification.** Lark bot secret.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| LARK_MESSAGE_TITLE          | `$GITHUB_WORKFLOW` | The title of the message card header. See [Card header](https://open.larksuite.com/document/common-capabilities/message-card/message-cards-content/card-header) for more information. `$GITHUB_WORKFLOW` is a GitHub action [default environment variable](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables).                                                                                 |
+| LARK_MESSAGE_TITLE          | `$GITHUB_WORKFLOW` | The title of the message card header. See [Card header](https://open.larksuite.com/document/common-capabilities/message-card/message-cards-content/card-header) for more information. <br /> `$GITHUB_WORKFLOW` is a GitHub action [default environment variable](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables).                                                                                 |
 | LARK_MESSAGE_SUBTITLE       | -                  | The subtitle of the message card header. See [Card header](https://open.larksuite.com/document/common-capabilities/message-card/message-cards-content/card-header) for more information.                                                                                                                                                                                                                                                                                                        |
 | LARK_MESSAGE_ICON_IMG_KEY   | -                  | The icon image key of the message card header. See [Card header](https://open.larksuite.com/document/common-capabilities/message-card/message-cards-content/card-header) for more information.                                                                                                                                                                                                                                                                                                  |
 | LARK_MESSAGE_TEMPLATE       | `"green"`          | The template of the message card header. See [Title style sheet](https://open.larksuite.com/document/common-capabilities/message-card/message-cards-content/card-header#ec1be977) for more information.                                                                                                                                                                                                                                                                                         |
-| LARK_MESSAGE_AUTHOR         | `$GITHUB_ACTOR`    | The name of the person or app that initiated the workflow. See [Default environment variables](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables) for more information. `$GITHUB_ACTOR` is a GitHub action [default environment variable](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables). |
+| LARK_MESSAGE_AUTHOR         | `$GITHUB_ACTOR`    | The name of the person or app that initiated the workflow. See [Default environment variables](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables) for more information. <br /> `$GITHUB_ACTOR` is a GitHub action [default environment variable](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables). |
 | LARK_MESSAGE_ENABLE_FORWARD | -                  | Whether forwarding of cards is allowed. See [Configure card properties](https://open.larksuite.com/document/common-capabilities/message-card/getting-started/card-structure/card-configuration) for more information.                                                                                                                                                                                                                                                                           |
 | LARK_MESSAGE_UPDATE_MULTI   | -                  | Whether it is a shared card. See [Configure card properties](https://open.larksuite.com/document/common-capabilities/message-card/getting-started/card-structure/card-configuration) for more information.                                                                                                                                                                                                                                                                                      |
 | LARK_MESSAGE_URL            | -                  | The URL of the message card. See [Link element](https://open.larksuite.com/document/ukTMukTMukTM/uYzM3QjL2MzN04iNzcDN/component-list/common-components-and-elements#426fb98d) for more information.                                                                                                                                                                                                                                                                                             |
@@ -54,7 +54,10 @@ Also see [Accessing contextual information about workflow runs](https://docs.git
 ## Develop
 
 1. Git clone
-2. Set up `.env` file
+2. Use Node.js specified in `.node-version`
+3. Enable [Corepack](https://github.com/nodejs/corepack) using `corepack enable`
+4. Run `pnpm install`
+5. Set up `.env` file like below
 
 ```shell
 LARK_WEBHOOK=test-webhook # Must update
@@ -71,9 +74,9 @@ GITHUB_SHA=test-sha
 
 ```
 
-3. Update code
-4. Run `pnpm run local` to test
-5. Run `pnpm run release` to release
+6. Update code
+7. Run `pnpm run local` to test
+8. Run `pnpm run release` to release
 
 ## Credits
 
