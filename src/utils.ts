@@ -38,6 +38,10 @@ export function getRequestSignature(): RequestSignature {
   };
 }
 
+export function getWorkflowFileName() {
+  return process.env.GITHUB_WORKFLOW_REF?.split("@")[0].split("/").at(-1);
+}
+
 export function getCardHeader() {
   // biome-ignore lint/suspicious/noExplicitAny: we have to use any here.
   const data: Record<string, any> = {
@@ -70,13 +74,6 @@ export function getCardElements() {
     );
   }
   const lastGitMessage = result.stdout.trim();
-
-  const workflowFile = process.env.GITHUB_WORKFLOW_REF?.split("@")[0]
-    .split("/")
-    .at(-1);
-  const workflowName = process.env.GITHUB_WORKFLOW?.includes(".github")
-    ? workflowFile?.split(".")[0]
-    : process.env.GITHUB_WORKFLOW;
 
   return [
     {
@@ -154,7 +151,7 @@ export function getCardElements() {
           elements: [
             {
               tag: "markdown",
-              content: `**Workflow & Run**\n[${workflowName}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/workflows/${workflowFile}) / [${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
+              content: `**Workflow / Run**\n[${process.env.GITHUB_WORKFLOW}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/workflows/${getWorkflowFileName()}) / [${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
             },
           ],
         },
