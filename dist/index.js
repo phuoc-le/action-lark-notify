@@ -34885,6 +34885,10 @@ function getRequestSignature() {
         sign,
     };
 }
+function getWorkflowFileName() {
+    var _a;
+    return (_a = process.env.GITHUB_WORKFLOW_REF) === null || _a === void 0 ? void 0 : _a.split("@")[0].split("/").at(-1);
+}
 function getCardHeader() {
     // biome-ignore lint/suspicious/noExplicitAny: we have to use any here.
     const data = {
@@ -34907,16 +34911,12 @@ function getCardHeader() {
     return data;
 }
 function getCardElements() {
-    var _a, _b, _c, _d;
+    var _a, _b;
     const result = shell.exec("git log -1 --pretty=%B", { silent: true });
     if (result.code !== 0) {
         core.setFailed(`Cannot get Git information. Have you setup the action correctly? ${(_a = result.stderr) !== null && _a !== void 0 ? _a : result.stdout}`);
     }
     const lastGitMessage = result.stdout.trim();
-    const workflowFile = (_b = process.env.GITHUB_WORKFLOW_REF) === null || _b === void 0 ? void 0 : _b.split("@")[0].split("/").at(-1);
-    const workflowName = ((_c = process.env.GITHUB_WORKFLOW) === null || _c === void 0 ? void 0 : _c.includes(".github"))
-        ? workflowFile === null || workflowFile === void 0 ? void 0 : workflowFile.split(".")[0]
-        : process.env.GITHUB_WORKFLOW;
     return [
         {
             tag: "column_set",
@@ -34991,7 +34991,7 @@ function getCardElements() {
                     elements: [
                         {
                             tag: "markdown",
-                            content: `**Workflow & Run**\n[${workflowName}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/workflows/${workflowFile}) / [${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
+                            content: `**Workflow / Run**\n[${process.env.GITHUB_WORKFLOW}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/workflows/${getWorkflowFileName()}) / [${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
                         },
                     ],
                 },
@@ -35002,7 +35002,7 @@ function getCardElements() {
                     elements: [
                         {
                             tag: "markdown",
-                            content: `**Commit**\n[${(_d = process.env.GITHUB_SHA) === null || _d === void 0 ? void 0 : _d.slice(0, 8)}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/commit/${process.env.GITHUB_SHA})`,
+                            content: `**Commit**\n[${(_b = process.env.GITHUB_SHA) === null || _b === void 0 ? void 0 : _b.slice(0, 8)}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/commit/${process.env.GITHUB_SHA})`,
                         },
                     ],
                 },
