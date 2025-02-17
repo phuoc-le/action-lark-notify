@@ -1,9 +1,9 @@
 import { writeFileSync } from "node:fs";
-import path from "node:path";
+import { resolve } from "node:path";
 import { makeBadge } from "badge-maker";
 import { version } from "../package.json";
 
-const target = path.resolve(__dirname, "../badge.svg");
+const target = resolve(__dirname, "../badge.svg");
 
 const svg = makeBadge({
   label: "Version",
