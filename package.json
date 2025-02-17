@@ -29,7 +29,8 @@
     "make-badge": "tsx ./scripts/make-badge.ts",
     "prepare": "is-ci || simple-git-hooks",
     "release": "release-it",
-    "preversion": "pnpm run check && pnpm run build"
+    "preversion": "pnpm run check && pnpm run build",
+    "postversion": "pnpm run make-badge"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
