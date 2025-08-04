@@ -3,7 +3,7 @@ description: "Notify in Lark"
 author: "phuoc-le"
 
 runs:
-  using: node22
+  using: node20
   main: dist/index.js
 
 branding:
