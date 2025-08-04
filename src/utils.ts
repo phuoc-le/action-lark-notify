@@ -65,114 +65,56 @@ export function getCardHeader() {
 }
 
 export function getCardElements() {
-  const result = shell.exec("git log -1 --pretty=%B", { silent: true });
-  if (result.code !== 0) {
-    core.setFailed(
-      `Cannot get Git information. Have you setup the action correctly? ${
-        result.stderr ?? result.stdout
-      }`,
-    );
-  }
-  const lastGitMessage = result.stdout.trim();
+  const templateInput = core.getMultilineInput("cardItems");
+  const columnsPerRow = Number.parseInt(
+    core.getInput("columnsPerRow", { required: false }) || "2",
+    10,
+  );
 
-  return [
-    {
+  const cardElements: unknown[] = [];
+  const replacedLines = templateInput.map((line) =>
+    replaceEnvPlaceholders(line.trim()),
+  );
+  const lineGroups = chunkArray(replacedLines, columnsPerRow);
+
+  for (const group of lineGroups) {
+    const columns = group.map((content) => ({
+      tag: "column",
+      width: "weighted",
+      weight: 1,
+      elements: [
+        {
+          tag: "markdown",
+          content,
+        },
+      ],
+    }));
+
+    cardElements.push({
       tag: "column_set",
       flex_mode: "bisect",
       background_style: "default",
       horizontal_spacing: "default",
-      columns: [
-        {
-          tag: "column",
-          width: "weighted",
-          weight: 1,
-          elements: [
-            {
-              tag: "markdown",
-              content: `**Repo**\n[${process.env.GITHUB_REPOSITORY}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY})`,
-            },
-          ],
-        },
-        {
-          tag: "column",
-          width: "weighted",
-          weight: 1,
-          elements: [
-            {
-              tag: "markdown",
-              content: `**Actor**\n[${
-                process.env.LARK_MESSAGE_AUTHOR || process.env.GITHUB_ACTOR
-              }](${process.env.GITHUB_SERVER_URL}/${process.env.LARK_MESSAGE_AUTHOR || process.env.GITHUB_ACTOR})`,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      tag: "column_set",
-      flex_mode: "bisect",
-      background_style: "default",
-      horizontal_spacing: "default",
-      columns: [
-        {
-          tag: "column",
-          width: "weighted",
-          weight: 1,
-          elements: [
-            {
-              tag: "markdown",
-              content: `**Ref**\n[${process.env.GITHUB_REF}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/tree/${process.env.GITHUB_REF_NAME})`,
-            },
-          ],
-        },
-        {
-          tag: "column",
-          width: "weighted",
-          weight: 1,
-          elements: [
-            {
-              tag: "markdown",
-              content: `**Event**\n${process.env.GITHUB_EVENT_NAME}`,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      tag: "column_set",
-      flex_mode: "bisect",
-      background_style: "default",
-      horizontal_spacing: "default",
-      columns: [
-        {
-          tag: "column",
-          width: "weighted",
-          weight: 1,
-          elements: [
-            {
-              tag: "markdown",
-              content: `**Workflow / Run**\n[${process.env.GITHUB_WORKFLOW}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/workflows/${getWorkflowFileName()}) / [${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
-            },
-          ],
-        },
-        {
-          tag: "column",
-          width: "weighted",
-          weight: 1,
-          elements: [
-            {
-              tag: "markdown",
-              content: `**Commit**\n[${process.env.GITHUB_SHA?.slice(0, 8)}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/commit/${process.env.GITHUB_SHA})`,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      tag: "markdown",
-      content: `**Message**\n${lastGitMessage}`,
-    },
-  ];
+      columns,
+    });
+  }
+
+  return cardElements;
+}
+
+function replaceEnvPlaceholders(template: string): string {
+  return template.replace(/{{(.*?)}}/g, (_, key) => {
+    const value = process.env[key.trim()];
+    return value !== undefined ? value : `{{${key}}}`;
+  });
+}
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
 }
 
 export function getCardConfig() {
@@ -197,6 +139,7 @@ export async function getRequestBody() {
   const requestSignature = getRequestSignature();
   const header = getCardHeader();
   const elements = getCardElements();
+  console.log(elements);
   const config = getCardConfig();
   const link = getCardLink();
 

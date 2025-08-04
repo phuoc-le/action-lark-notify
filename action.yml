@@ -2,6 +2,16 @@ name: "action-lark-notify"
 description: "Notify in Lark"
 author: "phuoc-le"
 
+inputs:
+  cardItems:
+    description: |
+      Multiline label:template input. You can use {{GITHUB_REPOSITORY}}, {{GITHUB_SERVER_URL}}, {{GITHUB_REPOSITORY}}, etc.
+    required: true
+  columnsPerRow:
+    description: 'Number of columns per row'
+    required: false
+    default: '2'
+
 runs:
   using: node20
   main: dist/index.js
