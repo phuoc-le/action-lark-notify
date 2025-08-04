@@ -17,7 +17,7 @@
     "name": "Phuoc Le",
     "email": "huuphuoc2791@gmail.com"
   },
-  "type": "commonjs",
+  "type": "module",
   "exports": {
     ".": "./dist/index.js"
   },
