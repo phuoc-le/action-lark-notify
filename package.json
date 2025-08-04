@@ -4,18 +4,18 @@
   "private": true,
   "description": "A GitHub action to notify in Lark.",
   "keywords": ["GitHub", "Actions", "JavaScript", "Lark"],
-  "homepage": "https://github.com/drayeasy/action-lark-notify#readme",
+  "homepage": "https://github.com/phuoc-le/action-lark-notify#readme",
   "bugs": {
-    "url": "https://github.com/drayeasy/action-lark-notify/issues"
+    "url": "https://github.com/phuoc-le/action-lark-notify/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/drayeasy/action-lark-notify.git"
+    "url": "git+https://github.com/phuoc-le/action-lark-notify.git"
   },
   "license": "MIT",
   "author": {
-    "name": "Ray Wu",
-    "email": "ray.wu@drayeasy.com"
+    "name": "Phuoc Le",
+    "email": "huuphuoc2791@gmail.com"
   },
   "type": "commonjs",
   "exports": {
