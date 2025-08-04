@@ -1,9 +1,9 @@
 name: "action-lark-notify"
 description: "Notify in Lark"
-author: "drayeasy"
+author: "phuoc-le"
 
 runs:
-  using: node20
+  using: node22
   main: dist/index.js
 
 branding:
