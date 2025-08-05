@@ -44860,29 +44860,35 @@ async function getLatestDeploymentStatus(octokit, repository, deploymentId) {
     });
 }
 async function getReleaseUrl() {
-    const context = github.context;
-    const inputs = {
-        token: core.getInput("token", { required: true }),
-    };
-    const octokit = github.getOctokit(inputs.token);
-    // Get owner and repo from context of payload that triggered the action
-    const { owner, repo } = context.repo;
-    // Get the tag name from the triggered action
-    const tagName = context.ref;
-    // This removes the 'refs/tags' portion of the string, i.e. from 'refs/tags/v1.10.15' to 'v1.10.15'
-    const tag = tagName.replace("refs/tags/", "");
-    // Get a release from the tag name
-    // API Documentation: https://developer.github.com/v3/repos/releases/#create-a-release
-    // Octokit Documentation: https://octokit.github.io/rest.js/#octokit-routes-repos-create-release
-    const getReleaseResponse = await octokit.rest.repos.getReleaseByTag({
-        owner,
-        repo,
-        tag,
-    });
-    // Get the outputs for the created release from the response
-    const { data: { id: releaseId, html_url: htmlUrl, upload_url: uploadUrl, name, body, draft, prerelease, author, }, } = getReleaseResponse;
-    process.env.GITHUB_RELEASE_URL = htmlUrl;
-    core.info(`GITHUB_RELEASE_URL: ${process.env.GITHUB_RELEASE_URL}`);
+    try {
+        const context = github.context;
+        const inputs = {
+            token: core.getInput("token", { required: true }),
+        };
+        const octokit = github.getOctokit(inputs.token);
+        // Get owner and repo from context of payload that triggered the action
+        const { owner, repo } = context.repo;
+        // Get the tag name from the triggered action
+        const tagName = context.ref;
+        core.info(`TAGNAME: ${tagName}`);
+        // This removes the 'refs/tags' portion of the string, i.e. from 'refs/tags/v1.10.15' to 'v1.10.15'
+        const tag = tagName.replace("refs/tags/", "");
+        // Get a release from the tag name
+        // API Documentation: https://developer.github.com/v3/repos/releases/#create-a-release
+        // Octokit Documentation: https://octokit.github.io/rest.js/#octokit-routes-repos-create-release
+        const getReleaseResponse = await octokit.rest.repos.getReleaseByTag({
+            owner,
+            repo,
+            tag,
+        });
+        // Get the outputs for the created release from the response
+        const { data: { id: releaseId, html_url: htmlUrl, upload_url: uploadUrl, name, body, draft, prerelease, author, }, } = getReleaseResponse;
+        process.env.GITHUB_RELEASE_URL = htmlUrl;
+        core.info(`GITHUB_RELEASE_URL: ${process.env.GITHUB_RELEASE_URL}`);
+    }
+    catch {
+        core.warning("Not found release URL");
+    }
 }
 
 ;// CONCATENATED MODULE: ./src/enhance-env.ts
