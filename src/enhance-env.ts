@@ -10,6 +10,7 @@ import {
   run,
 } from "./lib/actions.js";
 import { sleep } from "./lib/common.js";
+import { getReleaseUrl } from "./lib/github.js";
 
 export const enhanceEnv = run(async () => {
   const inputs = {
@@ -20,6 +21,8 @@ export const enhanceEnv = run(async () => {
 
   // --- due to some eventual consistency issues with the GitHub API, we need to take a short break
   await sleep(2000);
+
+  await getReleaseUrl();
 
   await getCurrentJob(octokit).then((job) => {
     if (core.isDebug()) {

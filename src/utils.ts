@@ -1,7 +1,6 @@
 import { createHmac } from "node:crypto";
 import * as core from "@actions/core";
 import { HttpClient } from "@actions/http-client";
-import * as shell from "shelljs";
 import type { LarkResponse, RequestSignature } from "./types";
 
 export function toBoolean(value: string | undefined) {
