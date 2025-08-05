@@ -44861,11 +44861,10 @@ async function getLatestDeploymentStatus(octokit, repository, deploymentId) {
 }
 async function getReleaseUrl() {
     const context = github.context;
-    const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) {
-        throw new Error("GITHUB_TOKEN environment variable is not set.");
-    }
-    const octokit = github.getOctokit(githubToken);
+    const inputs = {
+        token: core.getInput("token", { required: true }),
+    };
+    const octokit = github.getOctokit(inputs.token);
     // Get owner and repo from context of payload that triggered the action
     const { owner, repo } = context.repo;
     // Get the tag name from the triggered action
@@ -44878,10 +44877,10 @@ async function getReleaseUrl() {
     const getReleaseResponse = await octokit.rest.repos.getReleaseByTag({
         owner,
         repo,
-        tag
+        tag,
     });
     // Get the outputs for the created release from the response
-    const { data: { id: releaseId, html_url: htmlUrl, upload_url: uploadUrl, name: name, body: body, draft: draft, prerelease: prerelease, author: author } } = getReleaseResponse;
+    const { data: { id: releaseId, html_url: htmlUrl, upload_url: uploadUrl, name, body, draft, prerelease, author, }, } = getReleaseResponse;
     process.env.GITHUB_RELEASE_URL = htmlUrl;
     core.info(`GITHUB_RELEASE_URL: ${process.env.GITHUB_RELEASE_URL}`);
 }
