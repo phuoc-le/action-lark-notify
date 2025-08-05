@@ -17,7 +17,7 @@
     "name": "Phuoc Le",
     "email": "huuphuoc2791@gmail.com"
   },
-  "type": "commonjs",
+  "type": "module",
   "exports": {
     ".": "./dist/index.js"
   },
@@ -35,7 +35,11 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/http-client": "^2.2.3",
-    "shelljs": "^0.8.5"
+    "@octokit/graphql-schema": "^15.26.0",
+    "shelljs": "^0.8.5",
+    "@actions/github": "^6.0.1",
+    "yaml": "^2.8.0",
+    "zod": "^3.25.75"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
