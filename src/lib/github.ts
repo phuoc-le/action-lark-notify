@@ -118,7 +118,7 @@ export async function getReleaseUrlByBranch() {
 
     process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
     core.info(
-      `GITHUB_RELEASE_URL: ${process.env.GITHUB_RELEASE_URL_BY_BRANCH}`,
+      `GITHUB_RELEASE_URL_BY_BRANCH: ${process.env.GITHUB_RELEASE_URL_BY_BRANCH}`,
     );
   } catch {
     core.warning("Not found release URL");
