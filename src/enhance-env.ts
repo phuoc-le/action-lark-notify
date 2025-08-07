@@ -10,7 +10,7 @@ import {
   run,
 } from "./lib/actions.js";
 import { sleep } from "./lib/common.js";
-import { getReleaseUrl } from "./lib/github.js";
+import { getReleaseUrl, getReleaseUrlByBranch } from "./lib/github.js";
 
 export const enhanceEnv = run(async () => {
   const inputs = {
@@ -23,6 +23,8 @@ export const enhanceEnv = run(async () => {
   await sleep(2000);
 
   await getReleaseUrl();
+
+  await getReleaseUrlByBranch();
 
   await getCurrentJob(octokit).then((job) => {
     if (core.isDebug()) {
