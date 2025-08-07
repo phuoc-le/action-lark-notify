@@ -44890,6 +44890,33 @@ async function getReleaseUrl() {
         core.warning("Not found release URL");
     }
 }
+async function getReleaseUrlByBranch() {
+    try {
+        const inputs = {
+            token: core.getInput("token", { required: true }),
+        };
+        const branch = core.getInput("branch", { required: true });
+        const octokit = github.getOctokit(inputs.token);
+        const { owner, repo } = github.context.repo;
+        const releases = await octokit.rest.repos.listReleases({
+            owner,
+            repo,
+            per_page: 100,
+        });
+        const release = releases.data.find(r => r.target_commitish === branch && !r.draft);
+        if (!release) {
+            core.setFailed(`No release found for branch: ${branch}`);
+            return;
+        }
+        core.setOutput("release_tag", release.tag_name);
+        core.info(`Latest release on branch "${branch}": ${release.tag_name}`);
+        process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
+        core.info(`GITHUB_RELEASE_URL: ${process.env.GITHUB_RELEASE_URL_BY_BRANCH}`);
+    }
+    catch (error) {
+        core.setFailed(error.message);
+    }
+}
 
 ;// CONCATENATED MODULE: ./src/enhance-env.ts
 
@@ -44906,6 +44933,7 @@ const enhanceEnv = run(async () => {
     // --- due to some eventual consistency issues with the GitHub API, we need to take a short break
     await sleep(2000);
     await getReleaseUrl();
+    await getReleaseUrlByBranch();
     await getCurrentJob(octokit).then((job) => {
         if (core.isDebug()) {
             core.debug(JSON.stringify(job));
