@@ -44895,7 +44895,8 @@ async function getReleaseUrlByBranch() {
         const inputs = {
             token: core.getInput("token", { required: true }),
         };
-        const branch = core.getInput("branch", { required: true });
+        const ref = github.context.ref;
+        const branch = ref.startsWith("refs/heads/") ? ref.replace("refs/heads/", "") : ref;
         const octokit = github.getOctokit(inputs.token);
         const { owner, repo } = github.context.repo;
         const releases = await octokit.rest.repos.listReleases({
@@ -44903,7 +44904,7 @@ async function getReleaseUrlByBranch() {
             repo,
             per_page: 100,
         });
-        const release = releases.data.find(r => r.target_commitish === branch && !r.draft);
+        const release = releases.data.find((r) => r.target_commitish === branch && !r.draft);
         if (!release) {
             core.setFailed(`No release found for branch: ${branch}`);
             return;
@@ -44913,8 +44914,8 @@ async function getReleaseUrlByBranch() {
         process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
         core.info(`GITHUB_RELEASE_URL: ${process.env.GITHUB_RELEASE_URL_BY_BRANCH}`);
     }
-    catch (error) {
-        core.setFailed(error.message);
+    catch {
+        core.warning("Not found release URL");
     }
 }
 

@@ -90,7 +90,11 @@ export async function getReleaseUrlByBranch() {
       token: core.getInput("token", { required: true }),
     };
 
-    const branch = core.getInput("branch", { required: true });
+    const ref = github.context.ref;
+    const branch = ref.startsWith("refs/heads/")
+      ? ref.replace("refs/heads/", "")
+      : ref;
+
     const octokit = github.getOctokit(inputs.token);
     const { owner, repo } = github.context.repo;
 
