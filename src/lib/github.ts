@@ -109,7 +109,7 @@ export async function getReleaseUrlByBranch() {
     );
 
     if (!release) {
-      core.setFailed(`No release found for branch: ${branch}`);
+      core.warning(`No release found for branch: ${branch}`);
       return;
     }
 

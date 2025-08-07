@@ -44908,7 +44908,7 @@ async function getReleaseUrlByBranch() {
         });
         const release = releases.data.find((r) => r.target_commitish === branch && !r.draft);
         if (!release) {
-            core.setFailed(`No release found for branch: ${branch}`);
+            core.warning(`No release found for branch: ${branch}`);
             return;
         }
         core.setOutput("release_tag", release.tag_name);
