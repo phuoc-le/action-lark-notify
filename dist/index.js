@@ -44912,6 +44912,7 @@ async function getReleaseUrlByBranch() {
             return;
         }
         core.setOutput("release_tag", release.tag_name);
+        process.env.GITHUB_RELEASE_TAG_NAME = release.tag_name;
         core.info(`Latest release on branch "${branch}": ${release.tag_name}`);
         process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
         core.info(`GITHUB_RELEASE_URL_BY_BRANCH: ${process.env.GITHUB_RELEASE_URL_BY_BRANCH}`);
