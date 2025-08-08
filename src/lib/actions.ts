@@ -303,16 +303,24 @@ export async function getCurrentJob(
         }
         return job.runner_name === context.runnerName;
       });
-    if (currentJobs.length === 1) {
+
+    if (currentJobs.length > 0) {
       currentJob = currentJobs[0];
       core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
     } else {
-      if (currentJobs.length === 0) {
-        core.debug("No matching job found in workflow run.");
-      } else {
-        core.debug("Multiple matching jobs found in workflow run.");
-      }
+      core.debug("No matching job found in workflow run.");
     }
+
+    // if (currentJobs.length === 1) {
+    //   currentJob = currentJobs[0];
+    //   core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
+    // } else {
+    //   if (currentJobs.length === 0) {
+    //     core.debug("No matching job found in workflow run.");
+    //   } else {
+    //     core.debug("Multiple matching jobs found in workflow run.");
+    //   }
+    // }
   } while (!currentJob && retryAttempt < retryMaxAttempts);
 
   if (!currentJob) {
