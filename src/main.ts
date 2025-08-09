@@ -1,15 +1,11 @@
-import { fileURLToPath } from "node:url";
 import * as core from "@actions/core";
 import { enhanceEnv } from "./enhance-env";
 import { notify } from "./utils";
 
 export async function run() {
   try {
-    if (process.argv[1] === fileURLToPath(import.meta.url)) {
-      await enhanceEnv();
-    }
-
-    notify().then(() => {
+    await enhanceEnvironment();
+    await notify().then(() => {
       core.info("Notify succeeded.");
     });
   } catch (error) {
@@ -19,3 +15,13 @@ export async function run() {
     }
   }
 }
+
+const enhanceEnvironment = async () => {
+  try {
+    await enhanceEnv();
+  } catch (error) {
+    if (error instanceof Error) {
+      core.warning(`Enhance failed. Error message: ${error.message}`);
+    }
+  }
+};

@@ -3,7 +3,12 @@
   "version": "0.1.4",
   "private": true,
   "description": "A GitHub action to notify in Lark.",
-  "keywords": ["GitHub", "Actions", "JavaScript", "Lark"],
+  "keywords": [
+    "GitHub",
+    "Actions",
+    "JavaScript",
+    "Lark"
+  ],
   "homepage": "https://github.com/phuoc-le/action-lark-notify#readme",
   "bugs": {
     "url": "https://github.com/phuoc-le/action-lark-notify/issues"
@@ -25,7 +30,7 @@
     "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "build:watch": "pnpm run build --watch",
     "check": "biome check --write .",
-    "local": "local-action . src/main.ts .env",
+    "local": "cross-env NODE_OPTIONS=--no-experimental-strip-types local-action . src/main.ts .env",
     "make-badge": "tsx ./scripts/make-badge.ts",
     "prepare": "is-ci || simple-git-hooks",
     "release": "release-it",
@@ -34,33 +39,34 @@
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
     "@actions/http-client": "^2.2.3",
     "@octokit/graphql-schema": "^15.26.0",
-    "shelljs": "^0.8.5",
-    "@actions/github": "^6.0.1",
-    "yaml": "^2.8.0",
-    "zod": "^3.25.75"
+    "shelljs": "^0.10.0",
+    "yaml": "^2.8.1",
+    "zod": "^4.0.16"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@commitlint/cli": "^19.7.1",
-    "@commitlint/config-conventional": "^19.7.1",
-    "@github/local-action": "^2.6.2",
-    "@release-it/conventional-changelog": "^10.0.0",
-    "@tsconfig/node22": "^22.0.0",
-    "@types/node": "^22.13.4",
-    "@types/shelljs": "^0.8.15",
+    "@biomejs/biome": "^2.1.4",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@github/local-action": "^5.1.0",
+    "@release-it/conventional-changelog": "^10.0.1",
+    "@tsconfig/node22": "^22.0.2",
+    "@types/node": "^24.2.1",
+    "@types/shelljs": "^0.8.17",
     "@vercel/ncc": "^0.38.3",
-    "badge-maker": "^4.1.0",
+    "badge-maker": "^5.0.2",
+    "cross-env": "^10.0.0",
     "is-ci": "^4.1.0",
-    "lint-staged": "^15.4.3",
-    "release-it": "^18.1.2",
-    "simple-git-hooks": "^2.11.1",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "lint-staged": "^16.1.5",
+    "release-it": "^19.0.4",
+    "simple-git-hooks": "^2.13.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
   },
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@10.14.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
