@@ -45637,11 +45637,9 @@ async function getCurrentJob(octokit) {
         lib_core.debug(`Try to determine current job, attempt ${retryAttempt}/${retryMaxAttempts}`);
         const currentWorkflowRunJobs = await listJobsForCurrentWorkflowRun();
         lib_core.debug(`runner_name: ${actions_context.runnerName}\nworkflow_run_jobs:${JSON.stringify(currentWorkflowRunJobs, null, 2)}`);
-        const currentJobs = currentWorkflowRunJobs
-            .filter((job) => job.status === "in_progress" || job.status === "queued");
-        if (currentJobs.length > 0) {
-            lib_core.debug(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
-            currentJob = currentJobs[0];
+        if (currentWorkflowRunJobs.length > 0) {
+            lib_core.debug(`currentJobs: ${JSON.stringify(currentWorkflowRunJobs, null, 2)}`);
+            currentJob = currentWorkflowRunJobs[0];
             lib_core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
         }
         else {

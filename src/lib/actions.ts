@@ -64,13 +64,12 @@ export async function getCurrentJob(
     core.debug(
       `runner_name: ${context.runnerName}\nworkflow_run_jobs:${JSON.stringify(currentWorkflowRunJobs, null, 2)}`,
     );
-    const currentJobs = currentWorkflowRunJobs.filter(
-      (job) => job.status === "in_progress" || job.status === "queued",
-    );
 
-    if (currentJobs.length > 0) {
-      core.debug(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
-      currentJob = currentJobs[0];
+    if (currentWorkflowRunJobs.length > 0) {
+      core.debug(
+        `currentJobs: ${JSON.stringify(currentWorkflowRunJobs, null, 2)}`,
+      );
+      currentJob = currentWorkflowRunJobs[0];
       core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
     } else {
       core.debug("No matching job found in workflow run.");
