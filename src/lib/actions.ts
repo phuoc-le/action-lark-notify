@@ -64,18 +64,12 @@ export async function getCurrentJob(
     core.debug(
       `runner_name: ${context.runnerName}\nworkflow_run_jobs:${JSON.stringify(currentWorkflowRunJobs, null, 2)}`,
     );
-    const currentJobs = currentWorkflowRunJobs
-      .filter((job) => job.status === "in_progress" || job.status === "queued")
-      .filter((job) => {
-        // job.runner_group_id 0 represents the GitHub Actions hosted runners
-        if (job.runner_group_id === 0 && job.runner_name === "GitHub Actions") {
-          return job.runner_id === runnerNumber;
-        }
-        return job.runner_name === context.runnerName;
-      });
+    const currentJobs = currentWorkflowRunJobs.filter(
+      (job) => job.status === "in_progress" || job.status === "queued",
+    );
 
     if (currentJobs.length > 0) {
-      core.info(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
+      core.debug(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
       currentJob = currentJobs[0];
       core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
     } else {

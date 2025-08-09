@@ -45638,16 +45638,9 @@ async function getCurrentJob(octokit) {
         const currentWorkflowRunJobs = await listJobsForCurrentWorkflowRun();
         lib_core.debug(`runner_name: ${actions_context.runnerName}\nworkflow_run_jobs:${JSON.stringify(currentWorkflowRunJobs, null, 2)}`);
         const currentJobs = currentWorkflowRunJobs
-            .filter((job) => job.status === "in_progress" || job.status === "queued")
-            .filter((job) => {
-            // job.runner_group_id 0 represents the GitHub Actions hosted runners
-            if (job.runner_group_id === 0 && job.runner_name === "GitHub Actions") {
-                return job.runner_id === runnerNumber;
-            }
-            return job.runner_name === actions_context.runnerName;
-        });
+            .filter((job) => job.status === "in_progress" || job.status === "queued");
         if (currentJobs.length > 0) {
-            lib_core.info(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
+            lib_core.debug(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
             currentJob = currentJobs[0];
             lib_core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
         }
@@ -45720,13 +45713,13 @@ async function getReleaseUrlByBranch() {
         });
         let release = releases.data.find((r) => r.target_commitish === branch && !r.draft);
         if (!release) {
-            lib_core.info(`No release found for branch: ${branch}`);
-            lib_core.info("Trying to find release on default branch...");
+            lib_core.debug(`No release found for branch: ${branch}`);
+            lib_core.debug("Trying to find release on default branch...");
             const repoInfo = await octokit.rest.repos.get({ owner, repo });
             const defaultBranch = repoInfo.data.default_branch;
             release = releases.data.find((r) => r.target_commitish === defaultBranch && !r.draft);
             if (!release) {
-                lib_core.info(`No release found on default branch: ${defaultBranch}`);
+                lib_core.debug(`No release found on default branch: ${defaultBranch}`);
                 return;
             }
         }

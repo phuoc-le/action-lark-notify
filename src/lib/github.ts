@@ -26,8 +26,8 @@ export async function getReleaseUrlByBranch() {
     );
 
     if (!release) {
-      core.info(`No release found for branch: ${branch}`);
-      core.info("Trying to find release on default branch...");
+      core.debug(`No release found for branch: ${branch}`);
+      core.debug("Trying to find release on default branch...");
 
       const repoInfo = await octokit.rest.repos.get({ owner, repo });
       const defaultBranch = repoInfo.data.default_branch;
@@ -37,7 +37,7 @@ export async function getReleaseUrlByBranch() {
       );
 
       if (!release) {
-        core.info(`No release found on default branch: ${defaultBranch}`);
+        core.debug(`No release found on default branch: ${defaultBranch}`);
         return;
       }
     }
