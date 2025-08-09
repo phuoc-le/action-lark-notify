@@ -1,237 +1,14 @@
-import * as fs from "node:fs";
-import * as process from "node:process";
 import * as core from "@actions/core";
-import type { InputOptions } from "@actions/core";
-import { Context } from "@actions/github/lib/context";
+import { Context } from "@actions/github/lib/context.js";
 import type { GitHub } from "@actions/github/lib/utils";
-import type { Deployment } from "@octokit/graphql-schema";
-import * as YAML from "yaml";
-import { ZodSchema, z } from "zod";
 import { _throw, sleep } from "./common.js";
 
 // cache of getCurrentJob result
 let _currentJob: Awaited<ReturnType<typeof getCurrentJob>>;
-// cache of getCurrentJob result
-let _currentDeployment: Awaited<ReturnType<typeof getCurrentDeployment>>;
-
-// --- GitHub Constants -------------------------------------------------------
-
-/**
- * GitHub Actions bot user
- */
-export const bot = {
-  name: "github-actions[bot]",
-  email: "41898282+github-actions[bot]@users.noreply.github.com",
-} as const;
-
-// --- GitHub Actions Utils ---------------------------------------------------
-
-/**
- * Run action and catch errors
- * @param action - action to run
- * @returns void
- */
-export function run(action: () => Promise<void>) {
-  return () =>
-    action().catch(async (error: unknown) => {
-      let failedMessage = "Unhandled error, see job log for details";
-      if (
-        error != null &&
-        typeof error === "object" &&
-        "message" in error &&
-        error.message != null
-      ) {
-        failedMessage = error.message.toString();
-      }
-      core.setFailed(failedMessage);
-      if (error != null && typeof error === "object" && "stack" in error) {
-        console.error(error.stack);
-      }
-    });
-}
-
-/**
- * {@link  core.getInput}
- *
- * @param name - input name
- * @param options - input options
- * @returns input value
- */
-export function getInput(
-  name: string,
-  options: core.InputOptions & { required: true },
-): string;
-/**
- * {@link  core.getInput}
- *
- * @param name - input name
- * @param options - input options
- * @returns input value
- */
-export function getInput(
-  name: string,
-  options?: core.InputOptions,
-): string | undefined;
-/**
- * {@link  core.getInput}
- *
- * @param name - input name
- * @param options - input options
- * @param schema - input schema
- * @returns input value
- */
-export function getInput<T extends ZodSchema>(
-  name: string,
-  options: core.InputOptions & { required: true },
-  schema: T,
-): z.infer<T>;
-/**
- * {@link  core.getInput}
- *
- * @param name - input name
- * @param options - input options
- * @param schema - input schema
- * @returns input value
- */
-export function getInput<T extends ZodSchema>(
-  name: string,
-  options: core.InputOptions,
-  schema: T,
-): z.infer<T> | undefined;
-/**
- * {@link  core.getInput}
- *
- * @param name - input name
- * @param schema - input schema
- * @returns input value
- */
-export function getInput<T extends ZodSchema>(
-  name: string,
-  schema: T,
-): z.infer<T> | undefined;
-export function getInput<T extends ZodSchema>(
-  name: string,
-  options_schema?: InputOptions | T,
-  schemaParam?: T,
-): string | z.infer<T> | undefined {
-  let options: InputOptions | undefined;
-  let schema = schemaParam;
-  // noinspection SuspiciousTypeOfGuard
-  if (options_schema instanceof ZodSchema) {
-    schema = options_schema;
-  } else {
-    options = options_schema;
-  }
-
-  const input = core.getInput(name, options);
-  if (!input) return undefined;
-  if (!schema) return input;
-
-  let parseResult = schema.safeParse(input);
-  if (parseResult.error) {
-    const initialIssue = parseResult.error.issues.at(0);
-    if (
-      initialIssue?.code === "invalid_type" &&
-      initialIssue.received === "string" &&
-      initialIssue.expected !== "string"
-    ) {
-      // try parse as yaml/json
-      parseResult = z
-        .string()
-        .transform((val, ctx) => {
-          try {
-            return YAML.parse(val);
-          } catch {
-            ctx.addIssue({
-              code: z.ZodIssueCode.invalid_type,
-              expected: initialIssue.expected,
-              received: "unknown",
-            });
-            return z.NEVER;
-          }
-        })
-        .pipe(schema)
-        .safeParse(input);
-    }
-  }
-
-  if (parseResult.error) {
-    const issues = parseResult.error.issues.map(formatZodIssue);
-    throw new Error(
-      `Invalid input value for \`${name}\`, received \`${input}\`\n${issues.map((it) => `  - ${it}`).join("\n")}`,
-    );
-  }
-
-  return parseResult.data;
-
-  // --- zod utils ---
-
-  /**
-   * This function will format a zod issue
-   * @param issue - zod issue
-   * @return formatted issue
-   */
-  function formatZodIssue(issue: z.ZodIssue): string {
-    if (issue.path.length === 0) return issue.message;
-    return `${issue.path.join(".")}: ${issue.message}`;
-  }
-}
-
-/**
- * Throw a permission error
- * @param permission - GitHub Job permission
- * @param options - error options
- * @returns void
- */
-export function throwPermissionError(
-  permission: { scope: string; permission: string },
-  options?: ErrorOptions,
-): never {
-  throw new PermissionError(
-    `Ensure that GitHub job has permission: \`${permission.scope}: ${permission.permission}\`. https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token`,
-    permission,
-    options,
-  );
-}
-
-export class PermissionError extends Error {
-  scope: string;
-  permission: string;
-
-  constructor(
-    msg: string,
-    permission: { scope: string; permission: string },
-    options?: ErrorOptions,
-  ) {
-    super(msg, options);
-
-    this.scope = permission.scope;
-    this.permission = permission.permission;
-
-    // Set the prototype explicitly.
-    Object.setPrototypeOf(this, PermissionError.prototype);
-  }
-}
-
-// --- Enhanced GitHub Action Context --------------------------------------------------
 
 class EnhancedContext extends Context {
   get repository() {
     return `${this.repo.owner}/${this.repo.repo}`;
-  }
-
-  get workflowRef() {
-    return (
-      process.env.GITHUB_WORKFLOW_REF ??
-      _throw(new Error("Missing environment variable: GITHUB_WORKFLOW_REF"))
-    );
-  }
-
-  get workflowSha() {
-    return (
-      process.env.GITHUB_WORKFLOW_SHA ??
-      _throw(new Error("Missing environment variable: GITHUB_WORKFLOW_SHA"))
-    );
   }
 
   runAttempt: number = Number.parseInt(
@@ -248,13 +25,6 @@ class EnhancedContext extends Context {
     return (
       process.env.RUNNER_NAME ??
       _throw(new Error("Missing environment variable: RUNNER_NAME"))
-    );
-  }
-
-  get runnerTempDir() {
-    return (
-      process.env.RUNNER_TEMP ??
-      _throw(new Error("Missing environment variable: RUNNER_TEMP"))
     );
   }
 }
@@ -310,17 +80,6 @@ export async function getCurrentJob(
     } else {
       core.debug("No matching job found in workflow run.");
     }
-
-    // if (currentJobs.length === 1) {
-    //   currentJob = currentJobs[0];
-    //   core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
-    // } else {
-    //   if (currentJobs.length === 0) {
-    //     core.debug("No matching job found in workflow run.");
-    //   } else {
-    //     core.debug("Multiple matching jobs found in workflow run.");
-    //   }
-    // }
   } while (!currentJob && retryAttempt < retryMaxAttempts);
 
   if (!currentJob) {
@@ -350,151 +109,37 @@ export async function getCurrentJob(
 }
 
 /**
- * Get the current deployment from the workflow run
- * @returns the current deployment or undefined
+ * Throw a permission error
+ * @param permission - GitHub Job permission
+ * @param options - error options
+ * @returns void
  */
-export async function getCurrentDeployment(
-  octokit: InstanceType<typeof GitHub>,
-): Promise<typeof currentDeploymentObject | undefined> {
-  if (_currentDeployment) return _currentDeployment;
-
-  const currentJob = await getCurrentJob(octokit);
-
-  // --- get deployments for current sha
-  const potentialDeploymentsFromRestApi = await octokit.rest.repos
-    .listDeployments({
-      ...context.repo,
-      sha: context.sha,
-      task: "deploy",
-      per_page: 100,
-    })
-    .catch((error) => {
-      if (error.status === 403) {
-        throwPermissionError(
-          { scope: "deployments", permission: "read" },
-          error,
-        );
-      }
-      throw error;
-    })
-    .then(({ data: deployments }) =>
-      deployments.filter(
-        (deployment) =>
-          deployment.performed_via_github_app?.slug === "github-actions",
-      ),
-    );
-
-  // --- get deployment workflow job run id
-  // noinspection GraphQLUnresolvedReference
-  const potentialDeploymentsFromGraphqlApi = await octokit
-    .graphql<{ nodes: Deployment[] }>(
-      `
-    query ($ids: [ID!]!) {
-      nodes(ids: $ids) {
-        ... on Deployment {
-          databaseId,
-          commitOid
-          createdAt
-          task
-          state
-          latestEnvironment
-          latestStatus {
-            logUrl
-            environmentUrl
-          }
-        }
-      }
-    }`,
-      {
-        ids: potentialDeploymentsFromRestApi.map(({ node_id }) => node_id),
-      },
-    )
-    .then(({ nodes: deployments }) =>
-      deployments
-        // filter is probably not needed due to check log url to match run id and job id
-        .filter((deployment) => deployment.commitOid === context.sha)
-        .filter((deployment) => deployment.task === "deploy")
-        .filter((deployment) => deployment.state === "IN_PROGRESS"),
-    );
-
-  const currentDeployment = potentialDeploymentsFromGraphqlApi.find(
-    (deployment) => {
-      if (!deployment.latestStatus?.logUrl) return false;
-      const logUrl = new URL(deployment.latestStatus.logUrl);
-
-      if (logUrl.origin !== context.serverUrl) return false;
-
-      const pathnameMatch = logUrl.pathname.match(
-        /\/(?<repository>[^/]+\/[^/]+)\/actions\/runs\/(?<run_id>[^/]+)\/job\/(?<job_id>[^/]+)/,
-      );
-
-      return (
-        pathnameMatch &&
-        pathnameMatch.groups?.repository ===
-          `${context.repo.owner}/${context.repo.repo}` &&
-        pathnameMatch.groups?.run_id === context.runId.toString() &&
-        pathnameMatch.groups?.job_id === currentJob.id.toString()
-      );
-    },
+export function throwPermissionError(
+  permission: { scope: string; permission: string },
+  options?: ErrorOptions,
+): never {
+  throw new PermissionError(
+    `Ensure that GitHub job has permission: \`${permission.scope}: ${permission.permission}\`. https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token`,
+    permission,
+    options,
   );
-
-  if (!currentDeployment) return undefined;
-
-  const currentDeploymentUrl =
-    // eslint-disable-next-line max-len
-    `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/deployments/${currentDeployment.latestEnvironment}`;
-  const currentDeploymentWorkflowUrl = buildWorkflowRunHtmlUrl(context);
-
-  if (!currentDeployment.latestStatus) {
-    throw new Error("Missing deployment latestStatus");
-  }
-  if (!currentDeployment.latestEnvironment) {
-    throw new Error("Missing deployment latestEnvironment");
-  }
-
-  const currentDeploymentObject = {
-    ...currentDeployment,
-    databaseId: undefined,
-    latestEnvironment: undefined,
-    latestStatus: undefined,
-    id:
-      currentDeployment.databaseId ??
-      _throw(new Error("Missing deployment databaseId")),
-    url: currentDeploymentUrl,
-    workflowUrl: currentDeploymentWorkflowUrl,
-    logUrl: (currentDeployment.latestStatus.logUrl as string) || undefined,
-    environment: currentDeployment.latestEnvironment,
-    environmentUrl:
-      (currentDeployment.latestStatus.environmentUrl as string) || undefined,
-  };
-  _currentDeployment = currentDeploymentObject;
-  return _currentDeployment;
-
-  function buildWorkflowRunHtmlUrl(context: {
-    serverUrl: string;
-    repo: { owner: string; repo: string };
-    runId: number;
-    runAttempt?: number;
-  }) {
-    return `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}${context.runAttempt ? `/attempts/${context.runAttempt}` : ""}`;
-  }
 }
 
-// --- Job State Management ---------------------------------------------------
+export class PermissionError extends Error {
+  scope: string;
+  permission: string;
 
-const JOB_STATE_FILE = `${context.runnerTempDir ?? "/tmp"}/${context.action.replace(/_\d*$/, "")}`;
+  constructor(
+    msg: string,
+    permission: { scope: string; permission: string },
+    options?: ErrorOptions,
+  ) {
+    super(msg, options);
 
-export function addJobState<T>(obj: T) {
-  fs.appendFileSync(JOB_STATE_FILE, `${JSON.stringify(obj)}\n`);
-}
+    this.scope = permission.scope;
+    this.permission = permission.permission;
 
-export function getJobState<T>() {
-  if (!fs.existsSync(JOB_STATE_FILE)) return [];
-
-  return fs
-    .readFileSync(JOB_STATE_FILE)
-    .toString()
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => JSON.parse(line)) as T[];
+    // Set the prototype explicitly.
+    Object.setPrototypeOf(this, PermissionError.prototype);
+  }
 }

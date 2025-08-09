@@ -1,20 +1,13 @@
 import * as process from "node:process";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
-import {
-  PermissionError,
-  context,
-  getCurrentDeployment,
-  getCurrentJob,
-  getInput,
-  run,
-} from "./lib/actions.js";
+import { context, getCurrentJob } from "./lib/actions.js";
 import { sleep } from "./lib/common.js";
-import { getReleaseUrl, getReleaseUrlByBranch } from "./lib/github.js";
+import { getReleaseUrlByBranch } from "./lib/github.js";
 
-export const enhanceEnv = run(async () => {
+export const enhanceEnv = async () => {
   const inputs = {
-    token: getInput("token", { required: true }),
+    token: core.getInput("token", { required: true }),
   };
 
   const octokit = github.getOctokit(inputs.token);
@@ -22,11 +15,9 @@ export const enhanceEnv = run(async () => {
   // --- due to some eventual consistency issues with the GitHub API, we need to take a short break
   await sleep(2000);
 
-  await getReleaseUrl();
-
   await getReleaseUrlByBranch();
 
-  await getCurrentJob(octokit).then((job) => {
+  await getCurrentJob(octokit).then((job: any) => {
     if (core.isDebug()) {
       core.debug(JSON.stringify(job));
     }
@@ -48,37 +39,4 @@ export const enhanceEnv = run(async () => {
     core.setOutput("job_url", job.html_url ?? "");
     process.env.GITHUB_JOB_URL = job.html_url ?? "";
   });
-
-  await getCurrentDeployment(octokit)
-    .catch((error) => {
-      if (
-        error instanceof PermissionError &&
-        error.scope === "deployments" &&
-        error.permission === "read"
-      ) {
-        core.debug(
-          "No permission to read deployment information." +
-            ' Grant the "deployments: read" permission to workflow job, if needed.',
-        );
-        return null;
-      }
-      throw error;
-    })
-    .then((deployment) => {
-      if (deployment) {
-        if (core.isDebug()) {
-          core.debug(JSON.stringify(deployment));
-        }
-
-        core.setOutput("environment", deployment.environment);
-        process.env.GITHUB_ENVIRONMENT = deployment.environment;
-        core.setOutput("environment_url", deployment.environmentUrl);
-        process.env.GITHUB_ENVIRONMENT_URL = deployment.environmentUrl;
-
-        core.setOutput("deployment_id", deployment.id);
-        process.env.GITHUB_DEPLOYMENT_ID = String(deployment.id);
-        core.setOutput("deployment_url", deployment.url);
-        process.env.GITHUB_DEPLOYMENT_URL = deployment.url;
-      }
-    });
-});
+};
