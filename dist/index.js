@@ -40223,166 +40223,12 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var lib_core = __nccwpck_require__(7484);
-// EXTERNAL MODULE: external "node:crypto"
-var external_node_crypto_ = __nccwpck_require__(7598);
-// EXTERNAL MODULE: ./node_modules/@actions/http-client/lib/index.js
-var lib = __nccwpck_require__(4844);
-;// CONCATENATED MODULE: ./src/utils.ts
-
-
-
-function toBoolean(value) {
-    return value === "true";
-}
-function getRequestUrl() {
-    const url = process.env.LARK_WEBHOOK;
-    if (!url) {
-        throw new Error("LARK_WEBHOOK is required");
-    }
-    return url;
-}
-function getRequestSignature() {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const secret = process.env.LARK_SECRET;
-    if (!secret) {
-        lib_core.warning("LARK_SECRET is not set, sign is skipped and it may lead to signature verification failure in Lark.");
-        lib_core.warning("See https://open.larksuite.com/document/client-docs/bot-v3/add-custom-bot#c1491056 for more information.");
-        return {};
-    }
-    const buffer = Buffer.from(`${timestamp}\n${secret}`, "utf-8");
-    const sign = (0,external_node_crypto_.createHmac)("sha256", buffer)
-        .update(Buffer.alloc(0))
-        .digest("base64");
-    return {
-        timestamp,
-        sign,
-    };
-}
-function getWorkflowFileName() {
-    return process.env.GITHUB_WORKFLOW_REF?.split("@")[0].split("/").at(-1);
-}
-function getCardHeader() {
-    // biome-ignore lint/suspicious/noExplicitAny: we have to use any here.
-    const data = {
-        title: {
-            tag: "plain_text",
-            content: process.env.LARK_MESSAGE_TITLE || process.env.GITHUB_WORKFLOW,
-        },
-        subtitle: {
-            tag: "plain_text",
-            content: process.env.LARK_MESSAGE_SUBTITLE,
-        },
-        icon: {
-            img_key: process.env.LARK_MESSAGE_ICON_IMG_KEY,
-        },
-        template: process.env.LARK_MESSAGE_TEMPLATE || "green",
-    };
-    if (!data.icon.img_key) {
-        data.icon = undefined;
-    }
-    return data;
-}
-function getCardElements() {
-    const templateInput = lib_core.getMultilineInput("cardItems");
-    const columnsPerRow = Number.parseInt(lib_core.getInput("columnsPerRow", { required: false }) || "2", 10);
-    const cardElements = [];
-    const replacedLines = templateInput.map((line) => replaceEnvPlaceholders(line.trim()));
-    const lineGroups = chunkArray(replacedLines, columnsPerRow);
-    for (const group of lineGroups) {
-        const columns = group.map((content) => ({
-            tag: "column",
-            width: "weighted",
-            weight: 1,
-            elements: [
-                {
-                    tag: "markdown",
-                    content,
-                },
-            ],
-        }));
-        cardElements.push({
-            tag: "column_set",
-            flex_mode: "bisect",
-            background_style: "default",
-            horizontal_spacing: "default",
-            columns,
-        });
-    }
-    return cardElements;
-}
-function replaceEnvPlaceholders(template) {
-    return template.replace(/{{(.*?)}}/g, (_, key) => {
-        const value = process.env[key.trim()];
-        return value !== undefined ? value : `{{${key}}}`;
-    });
-}
-function chunkArray(arr, size) {
-    const chunks = [];
-    for (let i = 0; i < arr.length; i += size) {
-        chunks.push(arr.slice(i, i + size));
-    }
-    return chunks;
-}
-function getCardConfig() {
-    return {
-        enable_forward: toBoolean(process.env.LARK_MESSAGE_ENABLE_FORWARD || "true"),
-        update_multi: toBoolean(process.env.LARK_MESSAGE_UPDATE_MULTI || "false"),
-    };
-}
-function getCardLink() {
-    return {
-        url: process.env.LARK_MESSAGE_URL,
-        android_url: process.env.LARK_MESSAGE_ANDROID_URL,
-        ios_url: process.env.LARK_MESSAGE_IOS_URL,
-        pc_url: process.env.LARK_MESSAGE_PC_URL,
-    };
-}
-async function getRequestBody() {
-    const requestSignature = getRequestSignature();
-    const header = getCardHeader();
-    const elements = getCardElements();
-    console.log(elements);
-    const config = getCardConfig();
-    const link = getCardLink();
-    return {
-        ...requestSignature,
-        msg_type: "interactive",
-        card: {
-            header,
-            elements,
-            config,
-            card_link: link,
-        },
-    };
-}
-async function notify() {
-    const httpClient = new lib.HttpClient();
-    const requestUrl = getRequestUrl();
-    lib_core.debug(`Request URL: ${requestUrl}`);
-    const requestBody = await getRequestBody();
-    lib_core.debug(`Request Body: ${JSON.stringify(requestBody, null, 2)}`);
-    return httpClient
-        .postJson(requestUrl, requestBody)
-        .then((response) => {
-        lib_core.debug(`Server Response: ${JSON.stringify(response, null, 2)}`);
-        const { statusCode, result } = response;
-        if (statusCode < 200 || statusCode >= 300) {
-            throw new Error(`Server status code ${statusCode} is out of range`);
-        }
-        if (!result) {
-            throw new Error("Server response is empty");
-        }
-        if (result.code !== 0) {
-            throw new Error(`Server response code: ${result.code}, message: ${result.msg}`);
-        }
-        return response;
-    });
-}
-
 ;// CONCATENATED MODULE: external "node:process"
 const external_node_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:process");
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(3228);
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/context.js
+var context = __nccwpck_require__(1648);
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
 var dist = __nccwpck_require__(8815);
 ;// CONCATENATED MODULE: ./node_modules/zod/v4/core/core.js
@@ -45747,51 +45593,6 @@ function _throw(error) {
     throw error;
 }
 
-;// CONCATENATED MODULE: ./src/lib/github.ts
-
-
-async function getReleaseUrlByBranch() {
-    try {
-        const inputs = {
-            token: lib_core.getInput("token"),
-        };
-        const ref = github.context.ref;
-        const branch = ref.startsWith("refs/heads/")
-            ? ref.replace("refs/heads/", "")
-            : ref;
-        const octokit = github.getOctokit(inputs.token);
-        const { owner, repo } = github.context.repo;
-        const releases = await octokit.rest.repos.listReleases({
-            owner,
-            repo,
-            per_page: 100,
-        });
-        let release = releases.data.find((r) => r.target_commitish === branch && !r.draft);
-        if (!release) {
-            lib_core.info(`No release found for branch: ${branch}`);
-            lib_core.info("Trying to find release on default branch...");
-            const repoInfo = await octokit.rest.repos.get({ owner, repo });
-            const defaultBranch = repoInfo.data.default_branch;
-            release = releases.data.find((r) => r.target_commitish === defaultBranch && !r.draft);
-            if (!release) {
-                lib_core.info(`No release found on default branch: ${defaultBranch}`);
-                return;
-            }
-        }
-        lib_core.setOutput("release_tag", release.tag_name);
-        process.env.GITHUB_RELEASE_TAG_NAME = release.tag_name;
-        lib_core.info(`Found release tag: ${release.tag_name}`);
-        process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
-        lib_core.info(`GITHUB_RELEASE_URL_BY_BRANCH: ${release.html_url}`);
-    }
-    catch (error) {
-        lib_core.warning("Failed to find release URL");
-        lib_core.warning(String(error));
-    }
-}
-
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/context.js
-var context = __nccwpck_require__(1648);
 ;// CONCATENATED MODULE: ./src/lib/actions.ts
 
 
@@ -45846,6 +45647,7 @@ async function getCurrentJob(octokit) {
             return job.runner_name === actions_context.runnerName;
         });
         if (currentJobs.length > 0) {
+            lib_core.info(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
             currentJob = currentJobs[0];
             lib_core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
         }
@@ -45897,6 +45699,49 @@ class PermissionError extends Error {
     }
 }
 
+;// CONCATENATED MODULE: ./src/lib/github.ts
+
+
+async function getReleaseUrlByBranch() {
+    try {
+        const inputs = {
+            token: lib_core.getInput("token"),
+        };
+        const ref = github.context.ref;
+        const branch = ref.startsWith("refs/heads/")
+            ? ref.replace("refs/heads/", "")
+            : ref;
+        const octokit = github.getOctokit(inputs.token);
+        const { owner, repo } = github.context.repo;
+        const releases = await octokit.rest.repos.listReleases({
+            owner,
+            repo,
+            per_page: 100,
+        });
+        let release = releases.data.find((r) => r.target_commitish === branch && !r.draft);
+        if (!release) {
+            lib_core.info(`No release found for branch: ${branch}`);
+            lib_core.info("Trying to find release on default branch...");
+            const repoInfo = await octokit.rest.repos.get({ owner, repo });
+            const defaultBranch = repoInfo.data.default_branch;
+            release = releases.data.find((r) => r.target_commitish === defaultBranch && !r.draft);
+            if (!release) {
+                lib_core.info(`No release found on default branch: ${defaultBranch}`);
+                return;
+            }
+        }
+        lib_core.setOutput("release_tag", release.tag_name);
+        process.env.GITHUB_RELEASE_TAG_NAME = release.tag_name;
+        lib_core.info(`Found release tag: ${release.tag_name}`);
+        process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
+        lib_core.info(`GITHUB_RELEASE_URL_BY_BRANCH: ${release.html_url}`);
+    }
+    catch (error) {
+        lib_core.warning("Failed to find release URL");
+        lib_core.warning(String(error));
+    }
+}
+
 ;// CONCATENATED MODULE: ./src/enhance-env.ts
 
 
@@ -45932,6 +45777,162 @@ const enhanceEnv = async () => {
         external_node_process_namespaceObject.env.GITHUB_JOB_URL = job.html_url ?? "";
     });
 };
+
+// EXTERNAL MODULE: external "node:crypto"
+var external_node_crypto_ = __nccwpck_require__(7598);
+// EXTERNAL MODULE: ./node_modules/@actions/http-client/lib/index.js
+var lib = __nccwpck_require__(4844);
+;// CONCATENATED MODULE: ./src/utils.ts
+
+
+
+function toBoolean(value) {
+    return value === "true";
+}
+function getRequestUrl() {
+    const url = process.env.LARK_WEBHOOK;
+    if (!url) {
+        throw new Error("LARK_WEBHOOK is required");
+    }
+    return url;
+}
+function getRequestSignature() {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const secret = process.env.LARK_SECRET;
+    if (!secret) {
+        lib_core.warning("LARK_SECRET is not set, sign is skipped and it may lead to signature verification failure in Lark.");
+        lib_core.warning("See https://open.larksuite.com/document/client-docs/bot-v3/add-custom-bot#c1491056 for more information.");
+        return {};
+    }
+    const buffer = Buffer.from(`${timestamp}\n${secret}`, "utf-8");
+    const sign = (0,external_node_crypto_.createHmac)("sha256", buffer)
+        .update(Buffer.alloc(0))
+        .digest("base64");
+    return {
+        timestamp,
+        sign,
+    };
+}
+function getWorkflowFileName() {
+    return process.env.GITHUB_WORKFLOW_REF?.split("@")[0].split("/").at(-1);
+}
+function getCardHeader() {
+    // biome-ignore lint/suspicious/noExplicitAny: we have to use any here.
+    const data = {
+        title: {
+            tag: "plain_text",
+            content: process.env.LARK_MESSAGE_TITLE || process.env.GITHUB_WORKFLOW,
+        },
+        subtitle: {
+            tag: "plain_text",
+            content: process.env.LARK_MESSAGE_SUBTITLE,
+        },
+        icon: {
+            img_key: process.env.LARK_MESSAGE_ICON_IMG_KEY,
+        },
+        template: process.env.LARK_MESSAGE_TEMPLATE || "green",
+    };
+    if (!data.icon.img_key) {
+        data.icon = undefined;
+    }
+    return data;
+}
+function getCardElements() {
+    const templateInput = lib_core.getMultilineInput("cardItems");
+    const columnsPerRow = Number.parseInt(lib_core.getInput("columnsPerRow", { required: false }) || "2", 10);
+    const cardElements = [];
+    const replacedLines = templateInput.map((line) => replaceEnvPlaceholders(line.trim()));
+    const lineGroups = chunkArray(replacedLines, columnsPerRow);
+    for (const group of lineGroups) {
+        const columns = group.map((content) => ({
+            tag: "column",
+            width: "weighted",
+            weight: 1,
+            elements: [
+                {
+                    tag: "markdown",
+                    content,
+                },
+            ],
+        }));
+        cardElements.push({
+            tag: "column_set",
+            flex_mode: "bisect",
+            background_style: "default",
+            horizontal_spacing: "default",
+            columns,
+        });
+    }
+    return cardElements;
+}
+function replaceEnvPlaceholders(template) {
+    return template.replace(/{{(.*?)}}/g, (_, key) => {
+        const value = process.env[key.trim()];
+        return value !== undefined ? value : `{{${key}}}`;
+    });
+}
+function chunkArray(arr, size) {
+    const chunks = [];
+    for (let i = 0; i < arr.length; i += size) {
+        chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+}
+function getCardConfig() {
+    return {
+        enable_forward: toBoolean(process.env.LARK_MESSAGE_ENABLE_FORWARD || "true"),
+        update_multi: toBoolean(process.env.LARK_MESSAGE_UPDATE_MULTI || "false"),
+    };
+}
+function getCardLink() {
+    return {
+        url: process.env.LARK_MESSAGE_URL,
+        android_url: process.env.LARK_MESSAGE_ANDROID_URL,
+        ios_url: process.env.LARK_MESSAGE_IOS_URL,
+        pc_url: process.env.LARK_MESSAGE_PC_URL,
+    };
+}
+async function getRequestBody() {
+    const requestSignature = getRequestSignature();
+    const header = getCardHeader();
+    const elements = getCardElements();
+    console.log(elements);
+    const config = getCardConfig();
+    const link = getCardLink();
+    return {
+        ...requestSignature,
+        msg_type: "interactive",
+        card: {
+            header,
+            elements,
+            config,
+            card_link: link,
+        },
+    };
+}
+async function notify() {
+    const httpClient = new lib.HttpClient();
+    const requestUrl = getRequestUrl();
+    lib_core.debug(`Request URL: ${requestUrl}`);
+    const requestBody = await getRequestBody();
+    lib_core.debug(`Request Body: ${JSON.stringify(requestBody, null, 2)}`);
+    return httpClient
+        .postJson(requestUrl, requestBody)
+        .then((response) => {
+        lib_core.debug(`Server Response: ${JSON.stringify(response, null, 2)}`);
+        const { statusCode, result } = response;
+        if (statusCode < 200 || statusCode >= 300) {
+            throw new Error(`Server status code ${statusCode} is out of range`);
+        }
+        if (!result) {
+            throw new Error("Server response is empty");
+        }
+        if (result.code !== 0) {
+            throw new Error(`Server response code: ${result.code}, message: ${result.msg}`);
+        }
+        return response;
+    });
+}
 
 ;// CONCATENATED MODULE: ./src/main.ts
 

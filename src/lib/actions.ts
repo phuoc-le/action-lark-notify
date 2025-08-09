@@ -75,6 +75,7 @@ export async function getCurrentJob(
       });
 
     if (currentJobs.length > 0) {
+      core.info(`currentJobs: ${JSON.stringify(currentJobs, null, 2)}`);
       currentJob = currentJobs[0];
       core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
     } else {
