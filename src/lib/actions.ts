@@ -58,14 +58,25 @@ export async function getCurrentJob(
 
   const pickByPriority = (pool: JobT[]): JobT | null => {
     if (!pool.length) return null;
+
     const failed = pool
       .filter((j) => j.conclusion === "failure")
       .sort(byScoreDesc);
     if (failed.length) return failed[0];
+
+    const completed = pool
+      .filter((j) => j.status === "completed" && j.conclusion !== "failure")
+      .sort(byScoreDesc);
+    if (completed.length) return completed[0];
+
     const inprog = pool
       .filter((j) => j.status === "in_progress")
       .sort(byScoreDesc);
     if (inprog.length) return inprog[0];
+
+    const queued = pool.filter((j) => j.status === "queued").sort(byScoreDesc);
+    if (queued.length) return queued[0];
+
     return [...pool].sort(byScoreDesc)[0] ?? null;
   };
 
