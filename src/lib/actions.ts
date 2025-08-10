@@ -47,32 +47,64 @@ export async function getCurrentJob(
     ? Number.parseInt(githubRunnerNameMatch.groups.id, 10)
     : null;
 
-  let currentJob:
-    | Awaited<ReturnType<typeof listJobsForCurrentWorkflowRun>>[number]
-    | null = null;
-  // retry to determine current job, because it takes some time until the job is available through the GitHub API
+  type JobT = Awaited<ReturnType<typeof listJobsForCurrentWorkflowRun>>[number];
+
+  const toMs = (s?: string | null) => {
+    if (!s) return Number.NEGATIVE_INFINITY;
+    const t = Date.parse(s);
+    return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
+  };
+  const compareIsoDesc = (a?: string | null, b?: string | null) => {
+    const ta = toMs(a),
+      tb = toMs(b);
+    return ta < tb ? 1 : ta > tb ? -1 : 0;
+  };
+  const isSameRunner = (job: JobT) => {
+    if (job.runner_group_id === 0 && job.runner_name === "GitHub Actions") {
+      return runnerNumber != null && job.runner_id === runnerNumber;
+    }
+    return job.runner_name === context.runnerName;
+  };
+
+  let currentJob: JobT | null = null;
+
   const retryMaxAttempts = 100;
   const retryDelay = 3000;
   let retryAttempt = 0;
+
   do {
     retryAttempt++;
     if (retryAttempt > 1) await sleep(retryDelay);
+
     core.debug(
       `Try to determine current job, attempt ${retryAttempt}/${retryMaxAttempts}`,
     );
-    const currentWorkflowRunJobs = await listJobsForCurrentWorkflowRun();
+
+    const jobs = await listJobsForCurrentWorkflowRun();
     core.debug(
-      `runner_name: ${context.runnerName}\nworkflow_run_jobs:${JSON.stringify(currentWorkflowRunJobs, null, 2)}`,
+      `runner_name: ${context.runnerName}\nworkflow_run_jobs:${JSON.stringify(jobs, null, 2)}`,
     );
 
-    if (currentWorkflowRunJobs.length > 0) {
-      core.debug(
-        `currentJobs: ${JSON.stringify(currentWorkflowRunJobs, null, 2)}`,
-      );
-      currentJob = currentWorkflowRunJobs[0];
-      core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
+    const sameRunner = jobs.filter(isSameRunner);
+
+    const inProgress = sameRunner
+      .filter((j) => j.status === "in_progress")
+      .sort((a, b) => compareIsoDesc(a.started_at, b.started_at));
+    if (inProgress.length > 0) {
+      currentJob = inProgress[0];
+    }
+
+    if (!currentJob && sameRunner.length > 0) {
+      currentJob = [...sameRunner].sort((a, b) => {
+        const cmp = compareIsoDesc(a.started_at, b.started_at);
+        return cmp !== 0 ? cmp : (b.id ?? 0) - (a.id ?? 0);
+      })[0];
+    }
+
+    if (!currentJob) {
+      core.debug("No matching job found in workflow run for this runner yet.");
     } else {
-      core.debug("No matching job found in workflow run.");
+      core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
     }
   } while (!currentJob && retryAttempt < retryMaxAttempts);
 
