@@ -45628,36 +45628,19 @@ async function getCurrentJob(octokit) {
         return _currentJob;
     const toMs = (s) => {
         if (!s)
-            return Number.NEGATIVE_INFINITY;
+            return Number.POSITIVE_INFINITY;
         const t = Date.parse(s);
-        return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
+        return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
     };
-    const score = (j) => Math.max(toMs(j.completed_at), toMs(j.started_at));
-    const byScoreDesc = (a, b) => score(b) - score(a) || (b.id ?? 0) - (a.id ?? 0);
-    const pickByPriority = (pool) => {
+    const firstTime = (j) => Math.min(toMs(j.started_at), toMs(j.created_at));
+    const byFirstAsc = (a, b) => (firstTime(a) - firstTime(b)) || ((a.id ?? 0) - (b.id ?? 0));
+    const pickFailedOrFirst = (pool) => {
         if (!pool.length)
             return null;
-        const failed = pool
-            .filter(j => j.conclusion === "failure")
-            .sort(byScoreDesc);
+        const failed = pool.filter(j => j.conclusion === "failure").sort(byFirstAsc);
         if (failed.length)
             return failed[0];
-        const completed = pool
-            .filter(j => j.status === "completed" && j.conclusion !== "failure")
-            .sort(byScoreDesc);
-        if (completed.length)
-            return completed[0];
-        const inprog = pool
-            .filter(j => j.status === "in_progress")
-            .sort(byScoreDesc);
-        if (inprog.length)
-            return inprog[0];
-        const queued = pool
-            .filter(j => j.status === "queued")
-            .sort(byScoreDesc);
-        if (queued.length)
-            return queued[0];
-        return [...pool].sort(byScoreDesc)[0] ?? null;
+        return [...pool].sort(byFirstAsc)[0] ?? null;
     };
     let currentJob = null;
     const retryMaxAttempts = 100;
@@ -45670,8 +45653,16 @@ async function getCurrentJob(octokit) {
         lib_core.debug(`Try to determine current job, attempt ${retryAttempt}/${retryMaxAttempts}`);
         const jobs = await listJobsForCurrentWorkflowRun();
         lib_core.debug(`runner_name: ${actions_context.runnerName}\nworkflow_run_jobs:${JSON.stringify(jobs, null, 2)}`);
-        const sameRunner = jobs.filter((j) => j.runner_name === actions_context.runnerName);
-        currentJob = pickByPriority(sameRunner) ?? pickByPriority(jobs);
+        const selfJob = jobs.find(j => j.runner_name === actions_context.runnerName) ?? null;
+        let pool = jobs;
+        if (selfJob?.name?.includes(" / ")) {
+            const prefix = selfJob.name.split(" / ")[0];
+            pool = jobs.filter(j => (j.name ?? "").startsWith(prefix + " / "));
+            lib_core.debug(`Group prefix: "${prefix}", grouped jobs: ${pool.map(j => j.name).join(", ")}`);
+            if (pool.length === 0)
+                pool = jobs;
+        }
+        currentJob = pickFailedOrFirst(pool);
         if (currentJob) {
             lib_core.debug(`Picked job: ${JSON.stringify(currentJob, null, 2)}`);
         }
