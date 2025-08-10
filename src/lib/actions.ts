@@ -35,17 +35,14 @@ export const context = new EnhancedContext();
  * Get the current job from the workflow run
  * @returns the current job
  */
+/**
+ * Get the current job from the workflow run
+ * @returns the current job
+ */
 export async function getCurrentJob(
   octokit: InstanceType<typeof GitHub>,
 ): Promise<typeof currentJobObject> {
   if (_currentJob) return _currentJob;
-
-  const githubRunnerNameMatch = context.runnerName.match(
-    /^GitHub-Actions-(?<id>\d+)$/,
-  );
-  const runnerNumber = githubRunnerNameMatch?.groups?.id
-    ? Number.parseInt(githubRunnerNameMatch.groups.id, 10)
-    : null;
 
   type JobT = Awaited<ReturnType<typeof listJobsForCurrentWorkflowRun>>[number];
 
@@ -54,16 +51,22 @@ export async function getCurrentJob(
     const t = Date.parse(s);
     return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
   };
-  const compareIsoDesc = (a?: string | null, b?: string | null) => {
-    const ta = toMs(a),
-      tb = toMs(b);
-    return ta < tb ? 1 : ta > tb ? -1 : 0;
-  };
-  const isSameRunner = (job: JobT) => {
-    if (job.runner_group_id === 0 && job.runner_name === "GitHub Actions") {
-      return runnerNumber != null && job.runner_id === runnerNumber;
-    }
-    return job.runner_name === context.runnerName;
+
+  const score = (j: JobT) => Math.max(toMs(j.completed_at), toMs(j.started_at));
+  const byScoreDesc = (a: JobT, b: JobT) =>
+    score(b) - score(a) || (b.id ?? 0) - (a.id ?? 0);
+
+  const pickByPriority = (pool: JobT[]): JobT | null => {
+    if (!pool.length) return null;
+    const failed = pool
+      .filter((j) => j.conclusion === "failure")
+      .sort(byScoreDesc);
+    if (failed.length) return failed[0];
+    const inprog = pool
+      .filter((j) => j.status === "in_progress")
+      .sort(byScoreDesc);
+    if (inprog.length) return inprog[0];
+    return [...pool].sort(byScoreDesc)[0] ?? null;
   };
 
   let currentJob: JobT | null = null;
@@ -85,26 +88,14 @@ export async function getCurrentJob(
       `runner_name: ${context.runnerName}\nworkflow_run_jobs:${JSON.stringify(jobs, null, 2)}`,
     );
 
-    const sameRunner = jobs.filter(isSameRunner);
+    const sameRunner = jobs.filter((j) => j.runner_name === context.runnerName);
 
-    const inProgress = sameRunner
-      .filter((j) => j.status === "in_progress")
-      .sort((a, b) => compareIsoDesc(a.started_at, b.started_at));
-    if (inProgress.length > 0) {
-      currentJob = inProgress[0];
-    }
+    currentJob = pickByPriority(sameRunner) ?? pickByPriority(jobs);
 
-    if (!currentJob && sameRunner.length > 0) {
-      currentJob = [...sameRunner].sort((a, b) => {
-        const cmp = compareIsoDesc(a.started_at, b.started_at);
-        return cmp !== 0 ? cmp : (b.id ?? 0) - (a.id ?? 0);
-      })[0];
-    }
-
-    if (!currentJob) {
-      core.debug("No matching job found in workflow run for this runner yet.");
+    if (currentJob) {
+      core.debug(`Picked job: ${JSON.stringify(currentJob, null, 2)}`);
     } else {
-      core.debug(`job:${JSON.stringify(currentJob, null, 2)}`);
+      core.debug("No matching job found yet.");
     }
   } while (!currentJob && retryAttempt < retryMaxAttempts);
 
@@ -112,9 +103,7 @@ export async function getCurrentJob(
     throw new Error("Current job could not be determined.");
   }
 
-  const currentJobObject = {
-    ...currentJob,
-  };
+  const currentJobObject = { ...currentJob };
   _currentJob = currentJobObject;
   return _currentJob;
 
