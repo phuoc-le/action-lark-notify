@@ -51,21 +51,23 @@ const isNumericLike = (v: unknown): boolean =>
 
 /** So sánh “lỏng” mà không dùng ==/!= để pass Biome */
 function looseEqual(a: unknown, b: unknown): boolean {
-	// null/undefined coi như bằng nhau
 	if (isNil(a) && isNil(b)) return true;
-
-	// Nếu một trong hai là boolean → so sánh sau khi ép số
 	if (typeof a === "boolean" || typeof b === "boolean") {
 		return toNumber(a) === toNumber(b);
 	}
-
-	// Cả hai numeric-like → so sánh số
 	if (isNumericLike(a) && isNumericLike(b)) {
 		return Number(a) === Number(b);
 	}
-
-	// Fallback: strict hoặc stringify so sánh
 	return a === b || String(a) === String(b);
+}
+
+/** Lấy biến từ process.env theo cách case-insensitive */
+function getFromProcessEnv(key: string): string | undefined {
+	return (
+		process.env[key] ??
+		process.env[key.toUpperCase?.()] ??
+		process.env[key.toLowerCase?.()]
+	);
 }
 
 function tokenize(s: string): Tok[] {
@@ -179,7 +181,6 @@ class Parser {
 		return this.toks[this.i++];
 	}
 
-	// or (short-circuit, trả về toán hạng “thực” như JS)
 	private parseOr(): unknown {
 		let left = this.parseAnd();
 		let p = this.peek();
@@ -314,6 +315,13 @@ class Parser {
 	private resolveIdentifier(path: string): unknown {
 		const [root, ...rest] = path.split(".");
 		const roots = this.ctx as Record<string, unknown>;
+
+		// Hỗ trợ đọc trực tiếp process.env qua appEnv.* hoặc processEnv.*
+		if (root === "appEnv" || root === "processEnv") {
+			if (rest.length === 0) return undefined;
+			const key = rest.join("."); // cho phép dấu . trong tên biến nếu cần
+			return getFromProcessEnv(key);
+		}
 
 		if (!Object.hasOwn(roots, root)) {
 			// Cho phép tham chiếu trực tiếp env khi không ghi root
