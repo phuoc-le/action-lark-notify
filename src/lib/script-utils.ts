@@ -1,0 +1,83 @@
+import * as core from "@actions/core";
+import * as githubSdk from "@actions/github";
+import * as fs from "fs";
+import * as path from "path";
+import * as vm from "vm";
+import {
+	type MergeVariable,
+	type NormalizedCtx,
+	normalizeCtx,
+} from "./merge-utils";
+
+function maskIfSecretLike(k: string, v: string) {
+	if (/(TOKEN|SECRET|PASSWORD|KEY)/i.test(k)) {
+		try {
+			core.setSecret(v);
+		} catch {}
+	}
+}
+
+function setEnv(name: string, value: unknown, envs: Record<string, string>) {
+	const s = value == null ? "" : String(value);
+	process.env[name] = s;
+	envs[name] = s;
+	core.exportVariable(name, s);
+	maskIfSecretLike(name, s);
+}
+
+export async function runEnvScript(options: {
+	scriptInline?: string;
+	scriptPath?: string;
+	ctx: MergeVariable;
+	timeoutMs?: number;
+}): Promise<void> {
+	const { scriptInline, scriptPath, timeoutMs = 2000 } = options;
+	const full = normalizeCtx(options.ctx);
+
+	let code = (scriptInline ?? "").trim();
+	if (!code && scriptPath) {
+		const abs = path.resolve(process.cwd(), scriptPath);
+		if (!fs.existsSync(abs)) throw new Error(`scriptPath not found: ${abs}`);
+		code = fs.readFileSync(abs, "utf8");
+	}
+	if (!code) return;
+
+	const sandbox: {
+		envs: NormalizedCtx["envs"];
+		vars: NormalizedCtx["vars"];
+		github: NormalizedCtx["github"];
+		matrix: NormalizedCtx["matrix"];
+		job: NormalizedCtx["job"];
+		steps: NormalizedCtx["steps"];
+		setEnv: (k: string, v: unknown) => void;
+		console: Console;
+		core: typeof core;
+		githubSdk: typeof githubSdk;
+	} = {
+		envs: full.envs,
+		vars: full.vars,
+		github: full.github,
+		matrix: full.matrix,
+		job: full.job,
+		steps: full.steps,
+		setEnv: (k, v) => setEnv(k, v, full.envs),
+		console,
+		core,
+		githubSdk,
+	};
+
+	const wrapped = `(async () => { ${code}\n })()`;
+	const context = vm.createContext(sandbox, { name: "env-script-sandbox" });
+	const script = new vm.Script(wrapped, {
+		filename: scriptPath ?? "inline-env-script.js",
+	});
+	const result: unknown = await script.runInNewContext(context, {
+		timeout: timeoutMs,
+	});
+
+	if (result && typeof result === "object" && !Array.isArray(result)) {
+		for (const [k, v] of Object.entries(result as Record<string, unknown>)) {
+			setEnv(k, v, full.envs);
+		}
+	}
+}

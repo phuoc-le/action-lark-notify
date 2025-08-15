@@ -1,72 +1,75 @@
 {
-  "name": "action-lark-notify",
-  "version": "0.1.4",
-  "private": true,
-  "description": "A GitHub action to notify in Lark.",
-  "keywords": [
-    "GitHub",
-    "Actions",
-    "JavaScript",
-    "Lark"
-  ],
-  "homepage": "https://github.com/phuoc-le/action-lark-notify#readme",
-  "bugs": {
-    "url": "https://github.com/phuoc-le/action-lark-notify/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/phuoc-le/action-lark-notify.git"
-  },
-  "license": "MIT",
-  "author": {
-    "name": "Phuoc Le",
-    "email": "huuphuoc2791@gmail.com"
-  },
-  "type": "module",
-  "exports": {
-    ".": "./dist/index.js"
-  },
-  "scripts": {
-    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
-    "build:watch": "pnpm run build --watch",
-    "check": "biome check --write .",
-    "local": "cross-env NODE_OPTIONS=--no-experimental-strip-types local-action . src/main.ts .env",
-    "make-badge": "tsx ./scripts/make-badge.ts",
-    "prepare": "is-ci || simple-git-hooks",
-    "release": "release-it",
-    "preversion": "pnpm run check && pnpm run build",
-    "postversion": "pnpm run make-badge"
-  },
-  "dependencies": {
-    "@actions/core": "^1.11.1",
-    "@actions/github": "^6.0.1",
-    "@actions/http-client": "^2.2.3",
-    "@octokit/graphql-schema": "^15.26.0",
-    "shelljs": "^0.10.0",
-    "yaml": "^2.8.1",
-    "zod": "^4.0.16"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.1.4",
-    "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
-    "@github/local-action": "^5.1.0",
-    "@release-it/conventional-changelog": "^10.0.1",
-    "@tsconfig/node22": "^22.0.2",
-    "@types/node": "^24.2.1",
-    "@types/shelljs": "^0.8.17",
-    "@vercel/ncc": "^0.38.3",
-    "badge-maker": "^5.0.2",
-    "cross-env": "^10.0.0",
-    "is-ci": "^4.1.0",
-    "lint-staged": "^16.1.5",
-    "release-it": "^19.0.4",
-    "simple-git-hooks": "^2.13.1",
-    "tsx": "^4.20.3",
-    "typescript": "^5.9.2"
-  },
-  "packageManager": "pnpm@10.14.0",
-  "engines": {
-    "node": ">=22"
-  }
+	"name": "action-lark-notify",
+	"version": "0.1.4",
+	"private": true,
+	"description": "A GitHub action to notify in Lark.",
+	"keywords": [
+		"GitHub",
+		"Actions",
+		"JavaScript",
+		"Lark"
+	],
+	"homepage": "https://github.com/phuoc-le/action-lark-notify#readme",
+	"bugs": {
+		"url": "https://github.com/phuoc-le/action-lark-notify/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/phuoc-le/action-lark-notify.git"
+	},
+	"license": "MIT",
+	"author": {
+		"name": "Phuoc Le",
+		"email": "huuphuoc2791@gmail.com"
+	},
+	"type": "module",
+	"exports": {
+		".": "./dist/index.js"
+	},
+	"scripts": {
+		"build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+		"build:watch": "pnpm run build --watch",
+		"check": "biome check --write .",
+		"local": "cross-env NODE_OPTIONS=--no-experimental-strip-types local-action . src/main.ts .env",
+		"make-badge": "tsx ./scripts/make-badge.ts",
+		"prepare": "is-ci || simple-git-hooks",
+		"release": "release-it",
+		"preversion": "pnpm run check && pnpm run build",
+		"postversion": "pnpm run make-badge"
+	},
+	"dependencies": {
+		"@actions/core": "^1.11.1",
+		"@actions/github": "^6.0.1",
+		"@actions/http-client": "^2.2.3",
+		"@octokit/graphql-schema": "^15.26.0",
+		"fs": "^0.0.1-security",
+		"path": "^0.12.7",
+		"shelljs": "^0.10.0",
+		"vm": "^0.1.0",
+		"yaml": "^2.8.1",
+		"zod": "^4.0.16"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.1.4",
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
+		"@github/local-action": "^5.1.0",
+		"@release-it/conventional-changelog": "^10.0.1",
+		"@tsconfig/node22": "^22.0.2",
+		"@types/node": "^24.2.1",
+		"@types/shelljs": "^0.8.17",
+		"@vercel/ncc": "^0.38.3",
+		"badge-maker": "^5.0.2",
+		"cross-env": "^10.0.0",
+		"is-ci": "^4.1.0",
+		"lint-staged": "^16.1.5",
+		"release-it": "^19.0.4",
+		"simple-git-hooks": "^2.13.1",
+		"tsx": "^4.20.3",
+		"typescript": "^5.9.2"
+	},
+	"packageManager": "pnpm@10.14.0",
+	"engines": {
+		"node": ">=22"
+	}
 }
