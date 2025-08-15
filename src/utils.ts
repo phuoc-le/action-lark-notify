@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import * as core from "@actions/core";
 import { HttpClient } from "@actions/http-client";
-import { type EvalContext, replaceEnvPlaceholders } from "./lib/merge-utils";
+import { type MergeVariable, replaceEnvPlaceholders } from "./lib/merge-utils";
 import type { LarkResponse, RequestSignature } from "./types";
 
 export function toBoolean(value: string | undefined) {
@@ -64,7 +64,7 @@ export function getCardHeader() {
 	return data;
 }
 
-export function getCardElements(ctx: EvalContext) {
+export function getCardElements(ctx: MergeVariable) {
 	const templateInput = core.getMultilineInput("cardItems");
 	const columnsPerRow = Number.parseInt(
 		core.getInput("columnsPerRow", { required: false }) || "2",
@@ -129,7 +129,7 @@ export function getCardLink() {
 	};
 }
 
-export async function getRequestBody(ctx: EvalContext) {
+export async function getRequestBody(ctx: MergeVariable) {
 	const requestSignature = getRequestSignature();
 	const header = getCardHeader();
 	const elements = getCardElements(ctx);
@@ -148,7 +148,7 @@ export async function getRequestBody(ctx: EvalContext) {
 	};
 }
 
-export async function notify(ctx: EvalContext) {
+export async function notify(ctx: MergeVariable) {
 	const httpClient = new HttpClient();
 	const requestUrl = getRequestUrl();
 	core.debug(`Request URL: ${requestUrl}`);

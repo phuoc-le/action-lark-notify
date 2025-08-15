@@ -11,7 +11,6 @@ export async function run() {
 		const scriptInline = core.getInput("scriptInline") || "";
 		const scriptPath = core.getInput("scriptPath") || "";
 		const ctx = buildCtx();
-		console.log("Context", ctx);
 		core.debug(`Context: ${ctx}`);
 
 		await runEnvScript({

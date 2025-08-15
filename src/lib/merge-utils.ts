@@ -1,13 +1,11 @@
-// Replace {{ ... }} placeholders bằng giá trị evaluate từ context (envs/vars/github/matrix/job/steps)
-
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue =
 	| JsonPrimitive
 	| { [k: string]: JsonValue }
 	| JsonValue[];
 
-export type EvalContext = {
-	envs?: Record<string, string>; // env luôn là string
+export type MergeVariable = {
+	envs?: Record<string, string>;
 	vars?: Record<string, JsonValue>;
 	github?: Record<string, unknown>;
 	matrix?: Record<string, unknown>;
@@ -49,7 +47,6 @@ const isNil = (v: unknown): v is null | undefined =>
 const isNumericLike = (v: unknown): boolean =>
 	typeof v === "number" || (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v));
 
-/** So sánh “lỏng” mà không dùng ==/!= để pass Biome */
 function looseEqual(a: unknown, b: unknown): boolean {
 	if (isNil(a) && isNil(b)) return true;
 	if (typeof a === "boolean" || typeof b === "boolean") {
@@ -61,7 +58,6 @@ function looseEqual(a: unknown, b: unknown): boolean {
 	return a === b || String(a) === String(b);
 }
 
-/** Lấy biến từ process.env theo cách case-insensitive */
 function getFromProcessEnv(key: string): string | undefined {
 	return (
 		process.env[key] ??
@@ -165,7 +161,7 @@ class Parser {
 	private i = 0;
 	constructor(
 		private toks: Tok[],
-		private ctx: Required<EvalContext>,
+		private ctx: Required<MergeVariable>,
 	) {}
 
 	parse(): unknown {
@@ -316,22 +312,19 @@ class Parser {
 		const [root, ...rest] = path.split(".");
 		const roots = this.ctx as Record<string, unknown>;
 
-		// Hỗ trợ đọc trực tiếp process.env qua appEnv.* hoặc processEnv.*
 		if (root === "appEnv" || root === "processEnv") {
 			if (rest.length === 0) return undefined;
-			const key = rest.join("."); // cho phép dấu . trong tên biến nếu cần
+			const key = rest.join(".");
 			return getFromProcessEnv(key);
 		}
 
 		if (!Object.hasOwn(roots, root)) {
-			// Cho phép tham chiếu trực tiếp env khi không ghi root
 			const fromEnv =
 				this.ctx.envs[root] ??
 				this.ctx.envs[root.toUpperCase?.()] ??
 				this.ctx.envs[root.toLowerCase?.()];
 			if (typeof fromEnv !== "undefined")
 				return rest.length ? undefined : fromEnv;
-			throw new Error(`Unknown root or identifier: ${root}`);
 		}
 
 		let cur: unknown = roots[root];
@@ -359,7 +352,7 @@ class Parser {
 	}
 }
 
-export function evaluateExpression(expr: string, ctx: EvalContext): unknown {
+export function evaluateExpression(expr: string, ctx: MergeVariable): unknown {
 	const tokens = tokenize(expr);
 	const parser = new Parser(tokens, normalizeCtx(ctx));
 	return parser.parse();
@@ -367,7 +360,7 @@ export function evaluateExpression(expr: string, ctx: EvalContext): unknown {
 
 export function replaceEnvPlaceholders(
 	template: string,
-	ctx: EvalContext,
+	ctx: MergeVariable,
 ): string {
 	const fullCtx = normalizeCtx(ctx);
 	return template.replace(/{{\s*([^}]+)\s*}}/g, (_m, inner) => {
@@ -376,7 +369,8 @@ export function replaceEnvPlaceholders(
 	});
 }
 
-function normalizeCtx(ctx: EvalContext): Required<EvalContext> {
+export type NormalizedCtx = Required<MergeVariable>;
+export function normalizeCtx(ctx: MergeVariable): Required<MergeVariable> {
 	return {
 		envs: ctx.envs ?? {},
 		vars: ctx.vars ?? {},

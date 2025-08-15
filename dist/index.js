@@ -45746,9 +45746,9 @@ async function getReleaseUrlByBranch() {
         }
         lib_core.setOutput("release_tag", release.tag_name);
         process.env.GITHUB_RELEASE_TAG_NAME = release.tag_name;
-        lib_core.info(`Found release tag: ${release.tag_name}`);
+        lib_core.debug(`Found release tag: ${release.tag_name}`);
         process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
-        lib_core.info(`GITHUB_RELEASE_URL_BY_BRANCH: ${release.html_url}`);
+        lib_core.debug(`GITHUB_RELEASE_URL_BY_BRANCH: ${release.html_url}`);
     }
     catch (error) {
         lib_core.warning("Failed to find release URL");
@@ -45815,83 +45815,7 @@ var external_fs_ = __nccwpck_require__(9896);
 var external_path_ = __nccwpck_require__(6928);
 ;// CONCATENATED MODULE: external "vm"
 const external_vm_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("vm");
-;// CONCATENATED MODULE: ./src/lib/script-utils.ts
-
-
-
-
-function normalizeCtx(ctx) {
-    return {
-        envs: ctx.envs ?? {},
-        vars: ctx.vars ?? {},
-        github: ctx.github ?? {},
-        matrix: ctx.matrix ?? {},
-        job: ctx.job ?? {},
-        steps: ctx.steps ?? {},
-    };
-}
-function maskIfSecretLike(k, v) {
-    if (/(TOKEN|SECRET|PASSWORD|KEY)/i.test(k)) {
-        try {
-            lib_core.setSecret(v);
-        }
-        catch { }
-    }
-}
-function setEnv(name, value, envs) {
-    const s = value == null ? "" : String(value);
-    process.env[name] = s;
-    envs[name] = s;
-    lib_core.exportVariable(name, s);
-    maskIfSecretLike(name, s);
-}
-/**
- * Run inline code or a file at scriptPath. If script returns an object,
- * its keys are merged into env (exported). Use setEnv() inside the script for explicit export.
- */
-async function runEnvScript(options) {
-    const { scriptInline, scriptPath, timeoutMs = 2000 } = options;
-    const full = normalizeCtx(options.ctx);
-    let code = (scriptInline ?? "").trim();
-    if (!code && scriptPath) {
-        const abs = external_path_.resolve(process.cwd(), scriptPath);
-        if (!external_fs_.existsSync(abs))
-            throw new Error(`scriptPath not found: ${abs}`);
-        code = external_fs_.readFileSync(abs, "utf8");
-    }
-    if (!code)
-        return;
-    const sandbox = {
-        envs: full.envs,
-        vars: full.vars,
-        github: full.github,
-        matrix: full.matrix,
-        job: full.job,
-        steps: full.steps,
-        setEnv: (k, v) => setEnv(k, v, full.envs),
-        console,
-    };
-    const wrapped = `(async () => { ${code}\n })()`;
-    const context = external_vm_namespaceObject.createContext(sandbox, { name: "env-script-sandbox" });
-    const script = new external_vm_namespaceObject.Script(wrapped, {
-        filename: scriptPath ?? "inline-env-script.js",
-    });
-    const result = await script.runInNewContext(context, {
-        timeout: timeoutMs,
-    });
-    if (result && typeof result === "object" && !Array.isArray(result)) {
-        for (const [k, v] of Object.entries(result)) {
-            setEnv(k, v, full.envs);
-        }
-    }
-}
-
-// EXTERNAL MODULE: external "node:crypto"
-var external_node_crypto_ = __nccwpck_require__(7598);
-// EXTERNAL MODULE: ./node_modules/@actions/http-client/lib/index.js
-var lib = __nccwpck_require__(4844);
 ;// CONCATENATED MODULE: ./src/lib/merge-utils.ts
-// Replace {{ ... }} placeholders bằng giá trị evaluate từ context (envs/vars/github/matrix/job/steps)
 const ID_START = /[A-Za-z_]/;
 const ID_PART = /[A-Za-z0-9_.\-[\]_]/;
 const isWS = (c) => /\s/.test(c);
@@ -45910,7 +45834,6 @@ const toNumber = (v) => {
 const stringifyValue = (v) => v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
 const isNil = (v) => v === null || v === undefined;
 const isNumericLike = (v) => typeof v === "number" || (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v));
-/** So sánh “lỏng” mà không dùng ==/!= để pass Biome */
 function looseEqual(a, b) {
     if (isNil(a) && isNil(b))
         return true;
@@ -45922,7 +45845,6 @@ function looseEqual(a, b) {
     }
     return a === b || String(a) === String(b);
 }
-/** Lấy biến từ process.env theo cách case-insensitive */
 function getFromProcessEnv(key) {
     return (process.env[key] ??
         process.env[key.toUpperCase?.()] ??
@@ -46165,21 +46087,18 @@ class Parser {
     resolveIdentifier(path) {
         const [root, ...rest] = path.split(".");
         const roots = this.ctx;
-        // Hỗ trợ đọc trực tiếp process.env qua appEnv.* hoặc processEnv.*
         if (root === "appEnv" || root === "processEnv") {
             if (rest.length === 0)
                 return undefined;
-            const key = rest.join("."); // cho phép dấu . trong tên biến nếu cần
+            const key = rest.join(".");
             return getFromProcessEnv(key);
         }
         if (!Object.hasOwn(roots, root)) {
-            // Cho phép tham chiếu trực tiếp env khi không ghi root
             const fromEnv = this.ctx.envs[root] ??
                 this.ctx.envs[root.toUpperCase?.()] ??
                 this.ctx.envs[root.toLowerCase?.()];
             if (typeof fromEnv !== "undefined")
                 return rest.length ? undefined : fromEnv;
-            throw new Error(`Unknown root or identifier: ${root}`);
         }
         let cur = roots[root];
         for (const seg of rest) {
@@ -46211,17 +46130,17 @@ class Parser {
 }
 function evaluateExpression(expr, ctx) {
     const tokens = tokenize(expr);
-    const parser = new Parser(tokens, merge_utils_normalizeCtx(ctx));
+    const parser = new Parser(tokens, normalizeCtx(ctx));
     return parser.parse();
 }
 function replaceEnvPlaceholders(template, ctx) {
-    const fullCtx = merge_utils_normalizeCtx(ctx);
+    const fullCtx = normalizeCtx(ctx);
     return template.replace(/{{\s*([^}]+)\s*}}/g, (_m, inner) => {
         const v = evaluateExpression(String(inner), fullCtx);
         return stringifyValue(v);
     });
 }
-function merge_utils_normalizeCtx(ctx) {
+function normalizeCtx(ctx) {
     return {
         envs: ctx.envs ?? {},
         vars: ctx.vars ?? {},
@@ -46232,6 +46151,68 @@ function merge_utils_normalizeCtx(ctx) {
     };
 }
 
+;// CONCATENATED MODULE: ./src/lib/script-utils.ts
+
+
+
+
+
+function maskIfSecretLike(k, v) {
+    if (/(TOKEN|SECRET|PASSWORD|KEY)/i.test(k)) {
+        try {
+            lib_core.setSecret(v);
+        }
+        catch { }
+    }
+}
+function setEnv(name, value, envs) {
+    const s = value == null ? "" : String(value);
+    process.env[name] = s;
+    envs[name] = s;
+    lib_core.exportVariable(name, s);
+    maskIfSecretLike(name, s);
+}
+async function runEnvScript(options) {
+    const { scriptInline, scriptPath, timeoutMs = 2000 } = options;
+    const full = normalizeCtx(options.ctx);
+    let code = (scriptInline ?? "").trim();
+    if (!code && scriptPath) {
+        const abs = external_path_.resolve(process.cwd(), scriptPath);
+        if (!external_fs_.existsSync(abs))
+            throw new Error(`scriptPath not found: ${abs}`);
+        code = external_fs_.readFileSync(abs, "utf8");
+    }
+    if (!code)
+        return;
+    const sandbox = {
+        envs: full.envs,
+        vars: full.vars,
+        github: full.github,
+        matrix: full.matrix,
+        job: full.job,
+        steps: full.steps,
+        setEnv: (k, v) => setEnv(k, v, full.envs),
+        console,
+    };
+    const wrapped = `(async () => { ${code}\n })()`;
+    const context = external_vm_namespaceObject.createContext(sandbox, { name: "env-script-sandbox" });
+    const script = new external_vm_namespaceObject.Script(wrapped, {
+        filename: scriptPath ?? "inline-env-script.js",
+    });
+    const result = await script.runInNewContext(context, {
+        timeout: timeoutMs,
+    });
+    if (result && typeof result === "object" && !Array.isArray(result)) {
+        for (const [k, v] of Object.entries(result)) {
+            setEnv(k, v, full.envs);
+        }
+    }
+}
+
+// EXTERNAL MODULE: external "node:crypto"
+var external_node_crypto_ = __nccwpck_require__(7598);
+// EXTERNAL MODULE: ./node_modules/@actions/http-client/lib/index.js
+var lib = __nccwpck_require__(4844);
 ;// CONCATENATED MODULE: ./src/utils.ts
 
 
@@ -46390,7 +46371,6 @@ async function run() {
         const scriptInline = lib_core.getInput("scriptInline") || "";
         const scriptPath = lib_core.getInput("scriptPath") || "";
         const ctx = buildCtx();
-        console.log("Context", ctx);
         lib_core.debug(`Context: ${ctx}`);
         await runEnvScript({
             scriptInline,

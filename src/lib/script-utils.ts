@@ -2,20 +2,11 @@ import * as core from "@actions/core";
 import * as fs from "fs";
 import * as path from "path";
 import * as vm from "vm";
-import type { EvalContext } from "./merge-utils";
-
-type NormalizedCtx = Required<EvalContext>;
-
-function normalizeCtx(ctx: EvalContext): NormalizedCtx {
-	return {
-		envs: ctx.envs ?? {},
-		vars: ctx.vars ?? {},
-		github: ctx.github ?? {},
-		matrix: ctx.matrix ?? {},
-		job: ctx.job ?? {},
-		steps: ctx.steps ?? {},
-	};
-}
+import {
+	type MergeVariable,
+	type NormalizedCtx,
+	normalizeCtx,
+} from "./merge-utils";
 
 function maskIfSecretLike(k: string, v: string) {
 	if (/(TOKEN|SECRET|PASSWORD|KEY)/i.test(k)) {
@@ -33,14 +24,10 @@ function setEnv(name: string, value: unknown, envs: Record<string, string>) {
 	maskIfSecretLike(name, s);
 }
 
-/**
- * Run inline code or a file at scriptPath. If script returns an object,
- * its keys are merged into env (exported). Use setEnv() inside the script for explicit export.
- */
 export async function runEnvScript(options: {
 	scriptInline?: string;
 	scriptPath?: string;
-	ctx: EvalContext;
+	ctx: MergeVariable;
 	timeoutMs?: number;
 }): Promise<void> {
 	const { scriptInline, scriptPath, timeoutMs = 2000 } = options;

@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
-import type { EvalContext } from "./merge-utils";
+import type { MergeVariable } from "./merge-utils";
 
 export async function getReleaseUrlByBranch() {
 	try {
@@ -45,17 +45,17 @@ export async function getReleaseUrlByBranch() {
 
 		core.setOutput("release_tag", release.tag_name);
 		process.env.GITHUB_RELEASE_TAG_NAME = release.tag_name;
-		core.info(`Found release tag: ${release.tag_name}`);
+		core.debug(`Found release tag: ${release.tag_name}`);
 
 		process.env.GITHUB_RELEASE_URL_BY_BRANCH = release.html_url;
-		core.info(`GITHUB_RELEASE_URL_BY_BRANCH: ${release.html_url}`);
+		core.debug(`GITHUB_RELEASE_URL_BY_BRANCH: ${release.html_url}`);
 	} catch (error) {
 		core.warning("Failed to find release URL");
 		core.warning(String(error));
 	}
 }
 
-export function buildCtx(): EvalContext {
+export function buildCtx(): MergeVariable {
 	const envs: Record<string, string> = {};
 	for (const [k, v] of Object.entries(process.env)) envs[k] = v ?? "";
 
@@ -72,12 +72,3 @@ export function buildCtx(): EvalContext {
 		: {};
 	return { envs, vars, github, matrix, job, steps };
 }
-
-export type DeploymentStatus =
-	| "error"
-	| "failure"
-	| "inactive"
-	| "in_progress"
-	| "queued"
-	| "pending"
-	| "success";
