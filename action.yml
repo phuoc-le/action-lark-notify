@@ -8,11 +8,17 @@ inputs:
       Multiline label:template input. You can use {{GITHUB_REPOSITORY}}, {{GITHUB_SERVER_URL}}, {{GITHUB_REPOSITORY}}, etc.
     required: true
   columnsPerRow:
-    description: 'Number of columns per row'
+    description: "Number of columns per row"
     required: false
-    default: '2'
+    default: "2"
   token:
     required: true
+  scriptInline:
+    description: "Inline JS to run before rendering (set env/ctx)"
+    required: false
+  scriptPath:
+    description: "Path to a JS file to run before rendering"
+    required: false
 
 runs:
   using: node20
