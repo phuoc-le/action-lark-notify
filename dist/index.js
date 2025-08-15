@@ -46226,6 +46226,7 @@ function normalizeCtx(ctx) {
 
 
 
+
 function maskIfSecretLike(k, v) {
     if (/(TOKEN|SECRET|PASSWORD|KEY)/i.test(k)) {
         try {
@@ -46262,6 +46263,8 @@ async function runEnvScript(options) {
         steps: full.steps,
         setEnv: (k, v) => setEnv(k, v, full.envs),
         console,
+        core: lib_core,
+        githubSdk: github,
     };
     const wrapped = `(async () => { ${code}\n })()`;
     const context = external_vm_namespaceObject.createContext(sandbox, { name: "env-script-sandbox" });

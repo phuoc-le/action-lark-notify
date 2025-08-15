@@ -1,4 +1,5 @@
 import * as core from "@actions/core";
+import * as githubSdk from "@actions/github";
 import * as fs from "fs";
 import * as path from "path";
 import * as vm from "vm";
@@ -50,6 +51,8 @@ export async function runEnvScript(options: {
 		steps: NormalizedCtx["steps"];
 		setEnv: (k: string, v: unknown) => void;
 		console: Console;
+		core: typeof core;
+		githubSdk: typeof githubSdk;
 	} = {
 		envs: full.envs,
 		vars: full.vars,
@@ -59,6 +62,8 @@ export async function runEnvScript(options: {
 		steps: full.steps,
 		setEnv: (k, v) => setEnv(k, v, full.envs),
 		console,
+		core,
+		githubSdk,
 	};
 
 	const wrapped = `(async () => { ${code}\n })()`;
