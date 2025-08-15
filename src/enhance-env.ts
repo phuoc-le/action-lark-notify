@@ -4,7 +4,6 @@ import * as github from "@actions/github";
 import { context, getCurrentJob } from "./lib/actions.js";
 import { sleep } from "./lib/common.js";
 import { getReleaseUrlByBranch, getReleaseUrlByTag } from "./lib/github.js";
-
 export const enhanceEnv = async () => {
 	const inputs = {
 		token: core.getInput("token", { required: true }),
@@ -17,6 +16,8 @@ export const enhanceEnv = async () => {
 
 	await getReleaseUrlByBranch();
 	await getReleaseUrlByTag();
+
+	process.env.GITHUB_TAG_VERSION = getRefTag();
 
 	await getCurrentJob(octokit).then((job: any) => {
 		if (core.isDebug()) {
@@ -40,4 +41,16 @@ export const enhanceEnv = async () => {
 		core.setOutput("job_url", job.html_url ?? "");
 		process.env.GITHUB_JOB_URL = job.html_url ?? "";
 	});
+};
+
+const getRefTag = (): string => {
+	return (
+		(process.env.RELEASE_TAG || "").trim() ||
+		(process.env.GITHUB_REF_TYPE === "tag"
+			? (process.env.GITHUB_REF_NAME || "").trim()
+			: "") ||
+		(github.context.ref?.startsWith("refs/tags/")
+			? github.context.ref.slice("refs/tags/".length)
+			: "")
+	);
 };
