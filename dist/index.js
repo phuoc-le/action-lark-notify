@@ -45758,7 +45758,7 @@ async function getReleaseUrlByBranch() {
 async function getReleaseUrlByTag() {
     try {
         const inputs = {
-            token: lib_core.getInput("token", { required: true })
+            token: lib_core.getInput("token", { required: true }),
         };
         let tag = process.env.RELEASE_TAG;
         if (!tag) {
@@ -45768,9 +45768,6 @@ async function getReleaseUrlByTag() {
             }
         }
         if (!tag) {
-            tag = process.env.GITHUB_RELEASE_TAG_NAME_BY_TAG || "";
-        }
-        if (!tag) {
             lib_core.warning("No tag provided (inputs.tag/ref/process.env). Skip finding release by tag.");
             return;
         }
@@ -45778,22 +45775,33 @@ async function getReleaseUrlByTag() {
         const { owner, repo } = github.context.repo;
         let release;
         try {
-            const byTag = await octokit.rest.repos.getReleaseByTag({ owner, repo, tag });
+            const byTag = await octokit.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag,
+            });
             release = byTag.data;
             if (release?.draft) {
                 lib_core.debug(`Release by tag '${tag}' is draft; try listReleases for non-draft.`);
-                const rels = await octokit.rest.repos.listReleases({ owner, repo, per_page: 100 });
+                const rels = await octokit.rest.repos.listReleases({
+                    owner,
+                    repo,
+                    per_page: 100,
+                });
                 const found = rels.data.find((r) => r.tag_name === tag && !r.draft);
                 if (found)
                     release = found;
             }
         }
         catch (e) {
-            // Nếu 404 (không có), thử listReleases tìm theo tag_name (non-draft)
             // @ts-expect-error - octokit error may have status
             if (e?.status === 404) {
                 lib_core.debug(`getReleaseByTag returned 404 for '${tag}', fallback to listReleases.`);
-                const rels = await octokit.rest.repos.listReleases({ owner, repo, per_page: 100 });
+                const rels = await octokit.rest.repos.listReleases({
+                    owner,
+                    repo,
+                    per_page: 100,
+                });
                 release = rels.data.find((r) => r.tag_name === tag && !r.draft);
             }
             else {

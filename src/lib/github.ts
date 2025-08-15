@@ -68,9 +68,6 @@ export async function getReleaseUrlByTag() {
 				tag = ref.replace("refs/tags/", "");
 			}
 		}
-		if (!tag) {
-			tag = process.env.GITHUB_RELEASE_TAG_NAME_BY_TAG || "";
-		}
 
 		if (!tag) {
 			core.warning(
@@ -110,7 +107,6 @@ export async function getReleaseUrlByTag() {
 				if (found) release = found;
 			}
 		} catch (e: unknown) {
-			// Nếu 404 (không có), thử listReleases tìm theo tag_name (non-draft)
 			// @ts-expect-error - octokit error may have status
 			if (e?.status === 404) {
 				core.debug(
