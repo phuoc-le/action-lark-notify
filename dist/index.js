@@ -45756,7 +45756,9 @@ async function getReleaseUrlByBranch() {
     }
 }
 function buildCtx() {
-    const envs = process.env.ENVS_JSON ? JSON.parse(process.env.ENVS_JSON) : {};
+    const envs = {};
+    for (const [k, v] of Object.entries(process.env))
+        envs[k] = v ?? "";
     const vars = process.env.VARS_JSON ? JSON.parse(process.env.VARS_JSON) : {};
     const github = process.env.GITHUB_JSON
         ? JSON.parse(process.env.GITHUB_JSON)
