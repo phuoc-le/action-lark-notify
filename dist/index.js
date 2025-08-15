@@ -45755,6 +45755,66 @@ async function getReleaseUrlByBranch() {
         lib_core.warning(String(error));
     }
 }
+async function getReleaseUrlByTag() {
+    try {
+        const inputs = {
+            token: lib_core.getInput("token", { required: true })
+        };
+        let tag = process.env.RELEASE_TAG;
+        if (!tag) {
+            const ref = github.context.ref;
+            if (ref?.startsWith("refs/tags/")) {
+                tag = ref.replace("refs/tags/", "");
+            }
+        }
+        if (!tag) {
+            tag = process.env.GITHUB_RELEASE_TAG_NAME_BY_TAG || "";
+        }
+        if (!tag) {
+            lib_core.warning("No tag provided (inputs.tag/ref/process.env). Skip finding release by tag.");
+            return;
+        }
+        const octokit = github.getOctokit(inputs.token);
+        const { owner, repo } = github.context.repo;
+        let release;
+        try {
+            const byTag = await octokit.rest.repos.getReleaseByTag({ owner, repo, tag });
+            release = byTag.data;
+            if (release?.draft) {
+                lib_core.debug(`Release by tag '${tag}' is draft; try listReleases for non-draft.`);
+                const rels = await octokit.rest.repos.listReleases({ owner, repo, per_page: 100 });
+                const found = rels.data.find((r) => r.tag_name === tag && !r.draft);
+                if (found)
+                    release = found;
+            }
+        }
+        catch (e) {
+            // Nếu 404 (không có), thử listReleases tìm theo tag_name (non-draft)
+            // @ts-expect-error - octokit error may have status
+            if (e?.status === 404) {
+                lib_core.debug(`getReleaseByTag returned 404 for '${tag}', fallback to listReleases.`);
+                const rels = await octokit.rest.repos.listReleases({ owner, repo, per_page: 100 });
+                release = rels.data.find((r) => r.tag_name === tag && !r.draft);
+            }
+            else {
+                lib_core.debug(`getReleaseByTag error (non-404): ${String(e)}`);
+                throw e;
+            }
+        }
+        if (!release) {
+            lib_core.debug(`No non-draft release found for tag: ${tag}`);
+            return;
+        }
+        process.env.GITHUB_RELEASE_TAG_NAME_BY_TAG = release.tag_name ?? tag;
+        process.env.GITHUB_RELEASE_URL_BY_TAG = release.html_url ?? "";
+        lib_core.debug(`Found release by tag: ${release.tag_name}`);
+        lib_core.debug(`GITHUB_RELEASE_URL_BY_TAG: ${release.html_url}`);
+    }
+    catch (error) {
+        lib_core.warning("Failed to find release by tag");
+        lib_core.warning(String(error));
+    }
+}
 function buildCtx() {
     const envs = {};
     for (const [k, v] of Object.entries(process.env))
@@ -45788,6 +45848,7 @@ const enhanceEnv = async () => {
     // --- due to some eventual consistency issues with the GitHub API, we need to take a short break
     await sleep(2000);
     await getReleaseUrlByBranch();
+    await getReleaseUrlByTag();
     await getCurrentJob(octokit).then((job) => {
         if (lib_core.isDebug()) {
             lib_core.debug(JSON.stringify(job));
