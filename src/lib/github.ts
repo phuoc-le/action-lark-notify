@@ -56,8 +56,7 @@ export async function getReleaseUrlByBranch() {
 }
 
 export function buildCtx(): EvalContext {
-	const envs: Record<string, string> = {};
-	for (const [k, v] of Object.entries(process.env)) envs[k] = v ?? "";
+	const envs = process.env.ENVS_JSON ? JSON.parse(process.env.ENVS_JSON) : {};
 
 	const vars = process.env.VARS_JSON ? JSON.parse(process.env.VARS_JSON) : {};
 	const github = process.env.GITHUB_JSON
